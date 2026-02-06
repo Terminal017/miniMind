@@ -1,3 +1,5 @@
+'use client'
+
 import {
   Card,
   CardHeader,
@@ -8,24 +10,77 @@ import {
 } from '@/components/ui/card'
 
 import { Button } from '@/components/ui/button'
+import { Field, FieldGroup } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { useState, useEffect } from 'react'
+import {
+  createLibrary,
+  getAllLibraries,
+  deleteLibrary,
+} from '@/services/libraryService'
+import { getChineseStatus } from '@/lib/db'
 
 export default function DocList() {
-  const docslist = [
-    { id: 1, name: '文档仓库1', files: '1', chunks: '20', state: '就绪' },
-    {
-      id: 2,
-      name: '文档仓库2Aaaakhauewshgiuwebghkasdhgifhadkgjhdaksghwsdhagjksldagh',
-      chunks: '20',
-      files: '2',
-      state: '处理中',
-    },
-    { id: 3, name: '文档仓库3', files: '3', chunks: '20', state: '就绪' },
-    { id: 4, name: '文档仓库4', files: '4', chunks: '20', state: '就绪' },
-    { id: 5, name: '文档仓库5', files: '5', chunks: '20', state: '处理中' },
-    { id: 6, name: '文档仓库6', files: '6', chunks: '20', state: '错误' },
-  ]
+  //控制Dialog显示
+  const [isOpen, setIsOpen] = useState(false)
+
+  //使用useLiveQuery，当监听内容发生变化时会自动更新
+  const libraries = useLiveQuery(() => getAllLibraries() ?? [], []) ?? []
+
+  //添加新的数据库后，表发生变化，libraries会自动更新
+  async function handleCreate(formData: FormData) {
+    const name = formData.get('name') as string
+    const result = await createLibrary(name)
+
+    if (result.success) {
+      toast.success('仓库创建成功', {
+        className: 'text-base',
+        position: 'bottom-right',
+      })
+      setIsOpen(false) // 关闭对话框
+    } else {
+      toast.info('警告：新建知识库发生错误', {
+        className: 'text-base',
+        position: 'bottom-right',
+      })
+    }
+  }
+
+  //删除知识库
+  async function handleDelete(libraryId: number) {
+    const result = await deleteLibrary(libraryId)
+    if (result.success) {
+      toast.success('仓库删除成功', {
+        className: 'text-base',
+        position: 'bottom-right',
+      })
+    }
+  }
 
   return (
     <>
@@ -34,38 +89,87 @@ export default function DocList() {
           <h2 className="text-3xl font-medium">知识库</h2>
           <p className="text-sm text-gray-700">管理本地文档仓库以用于RAG</p>
         </div>
-        <Button>
-          <Plus />
-          新建仓库
-        </Button>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus />
+              新建仓库
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-sm">
+            {/* <form action={handleCreate}> */}
+            <DialogHeader>
+              <DialogTitle>新建知识库</DialogTitle>
+            </DialogHeader>
+            <FieldGroup>
+              <Field>
+                <Label htmlFor="name-1">名称</Label>
+                <Input id="name-1" name="name" form="add-libname" required />
+              </Field>
+            </FieldGroup>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">取消</Button>
+              </DialogClose>
+              <form id="add-libname" action={handleCreate}>
+                <Button type="submit">确认</Button>
+              </form>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
       <div className="grid grid-cols-3 w-full py-4">
-        {docslist.map((doc) => (
-          <Card key={doc.id} className="m-4 gap-3 pb-0 overflow-hidden">
+        {libraries.map((lib) => (
+          <Card key={lib.id} className="m-4 gap-3 pb-0 overflow-hidden">
             <CardHeader className="gap-1">
               {/*使用text-overflow避免名称过长溢出*/}
-              <CardTitle className="truncate text-lg">{doc.name}</CardTitle>
+              <CardTitle className="truncate text-lg">{lib.name}</CardTitle>
               <CardDescription className="text-sm">
-                {doc.files} 文档 &nbsp;·&nbsp; {doc.chunks} 切片
+                {lib.files} 文档 &nbsp;·&nbsp; {lib.chunks} 切片
               </CardDescription>
             </CardHeader>
             <CardContent
               className={cn('mb-2', 'font-medium', {
-                'text-green-500': doc.state === '就绪',
-                'text-orange-500': doc.state === '处理中',
-                'text-red-500': doc.state === '错误',
+                'text-green-500': lib.status === 'ready',
+                'text-orange-500': lib.status === 'progressing',
+                'text-red-500': lib.status === 'error',
+                'text-foreground': lib.status === 'empty',
               })}
             >
-              <p>状态： {doc.state}</p>
+              <p>状态： {getChineseStatus(lib.status)}</p>
             </CardContent>
 
             <CardFooter className="bg-muted/50 border-t py-4 gap-3">
               <Button variant="outline" size="sm" className="flex-1">
                 打开
               </Button>
-              <Button variant="outline" size="sm" className="flex-1">
-                删除
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex-1">
+                    删除
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent size="sm">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>确认删除吗</AlertDialogTitle>
+                    <AlertDialogDescription className="overflow-hidden">
+                      请确认删除的仓库：
+                      <br />
+                      <span className="font-bold wrap-anywhere">
+                        {lib.name}
+                      </span>
+                      <br />
+                      删除后仓库和文档无法恢复
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>取消</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleDelete(lib.id)}>
+                      确认
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </CardFooter>
           </Card>
         ))}

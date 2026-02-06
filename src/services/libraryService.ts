@@ -14,32 +14,27 @@ export async function createLibrary(name: string) {
   }
   try {
     const new_id = await db.libraries.add(new_library)
-    return { sucess: true }
+    return { success: true }
   } catch (error) {
     console.error('创建知识库失败:', error)
-    return { sucess: false }
+    return { success: false }
   }
 }
 
 //读取所有知识库
 export async function getAllLibraries() {
-  try {
-    const libraries = await db.libraries.toArray()
-    return { sucess: true, data: libraries }
-  } catch (error) {
-    console.error('获取知识库列表失败:', error)
-    return { sucess: false, data: [] }
-  }
+  const libraries = await db.libraries.toArray()
+  return libraries
 }
 
 //删除单个知识库
 export async function deleteLibrary(libraryId: number) {
   try {
     await db.libraries.delete(libraryId)
-    return { sucess: true }
+    return { success: true }
   } catch (error) {
     console.error('删除知识库失败:', error)
-    return { sucess: false }
+    return { success: false }
   }
 }
 
@@ -54,9 +49,9 @@ export async function updateLibrary(
 ) {
   try {
     db.libraries.update(libraryId, { ...updates, updatedAt: new Date() })
-    return { sucess: true }
+    return { success: true }
   } catch (error) {
     console.error('更新知识库失败:', error)
-    return { sucess: false }
+    return { success: false }
   }
 }

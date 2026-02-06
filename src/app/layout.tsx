@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import HeaderCom from '@/components/header'
+import { Toaster } from 'sonner'
 
 export const metadata: Metadata = {
   title: 'MiniMind AI',
@@ -20,6 +21,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-background text-foreground">
         <HeaderCom />
         {children}
+        <Toaster />
       </body>
     </html>
   )

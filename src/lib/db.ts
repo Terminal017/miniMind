@@ -2,7 +2,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 
 type LibraryType = {
-  id?: number
+  id: number
   name: string
   createdAt: Date
   updatedAt: Date
