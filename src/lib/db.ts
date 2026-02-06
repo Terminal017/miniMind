@@ -5,9 +5,22 @@ type LibraryType = {
   id?: number
   name: string
   createdAt: Date
+  updatedAt: Date
   files: number //文件数量和切片数量
   chunks: number
-  status: '就绪' | '处理中' | '错误' //知识库状态
+  status: 'ready' | 'progressing' | 'error' | 'empty' //知识库状态
+}
+
+const knowledgeChineseStatusMap = {
+  ready: '就绪',
+  progressing: '处理中',
+  error: '错误',
+  empty: '无内容',
+}
+
+//导出中文UI描述
+export const getChineseStatus = (status: LibraryType['status']) => {
+  return knowledgeChineseStatusMap[status]
 }
 
 type DocsType = {
