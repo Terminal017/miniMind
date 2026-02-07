@@ -15,100 +15,22 @@ import {
 
 import { columns, FileType } from './columns'
 import { DataTable } from './table'
+import {
+  addDocument,
+  getAllDocuments,
+  deleteDocuments,
+} from '@/services/documentService'
+import { useLiveQuery } from 'dexie-react-hooks'
 
 export default function DocList() {
   const { id } = useParams()
   console.log('当前知识库ID:', id)
-  const data: FileType[] = [
-    {
-      id: '1',
-      name: 'react.pdf',
-      status: 'ready',
-      size: 1000,
-      createdAt: '2024-06-01',
-    },
-    {
-      id: '2',
-      name: 'reactreactreactreactreactreactreactreactreactreactreactreact.pdf',
-      status: 'ready',
-      size: 1000,
-      createdAt: '2024-06-01',
-    },
-    {
-      id: '1',
-      name: 'react.pdf',
-      status: 'ready',
-      size: 1000,
-      createdAt: '2024-06-01',
-    },
-    {
-      id: '1',
-      name: 'react.pdf',
-      status: 'ready',
-      size: 1000,
-      createdAt: '2024-06-01',
-    },
-    {
-      id: '1',
-      name: 'react.pdf',
-      status: 'ready',
-      size: 1000,
-      createdAt: '2024-06-01',
-    },
-    {
-      id: '1',
-      name: 'react.pdf',
-      status: 'ready',
-      size: 1000,
-      createdAt: '2024-06-01',
-    },
-    {
-      id: '1',
-      name: 'react.pdf',
-      status: 'ready',
-      size: 1000,
-      createdAt: '2024-06-01',
-    },
-    {
-      id: '1',
-      name: 'react.pdf',
-      status: 'ready',
-      size: 1000,
-      createdAt: '2024-06-01',
-    },
-    {
-      id: '1',
-      name: 'react.pdf',
-      status: 'ready',
-      size: 1000,
-      createdAt: '2024-06-01',
-    },
-    {
-      id: '1',
-      name: 'react.pdf',
-      status: 'ready',
-      size: 1000,
-      createdAt: '2024-06-01',
-    },
-    {
-      id: '1',
-      name: 'react.pdf',
-      status: 'ready',
-      size: 1000,
-      createdAt: '2024-06-01',
-    },
-    {
-      id: '1',
-      name: 'react.pdf',
-      status: 'ready',
-      size: 1000,
-      createdAt: '2024-06-01',
-    },
-  ]
+
+  const data = useLiveQuery(() => getAllDocuments(Number(id)) ?? [], []) ?? []
 
   return (
     <>
-      <Breadcrumb className="w-full mt-2">
+      <Breadcrumb className="w-full mt-1">
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
@@ -121,12 +43,15 @@ export default function DocList() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <div className="flex flex-row justify-between items-center w-full p-4 mt-2">
+      <div className="flex flex-row justify-between items-center w-full p-4 mt-1">
         <div className="flex flex-col gap-1">
           <h2 className="text-3xl font-medium">文档处理</h2>
           <p className="text-sm text-gray-700">解析文档并进行切片向量化</p>
         </div>
-        <Button className="gap-1">
+        <Button
+          className="gap-1 "
+          onClick={() => addDocument(Number(id), '新文档', '这是文档内容', 100)}
+        >
           批量导入
           <FolderUp />
         </Button>

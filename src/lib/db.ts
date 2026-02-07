@@ -24,7 +24,7 @@ export const getChineseStatus = (status: LibraryType['status']) => {
 }
 
 type DocsType = {
-  id?: number
+  id: number
   libraryId: number
   name: string
   rawText: string //纯文本内容
@@ -34,7 +34,7 @@ type DocsType = {
 }
 
 type ChunkType = {
-  id?: number
+  id: number
   docId: number //所属文档ID
   libraryId: number //所属知识库ID，优化查询
   content: string //切片文本内容
@@ -52,7 +52,7 @@ const db = new Dexie('MinimindDB') as Dexie & {
 //定义主键和索引
 db.version(1).stores({
   libraries: '++id, name, status',
-  docs: '++id, libraryId, name, status',
+  documents: '++id, libraryId, name, status',
   chunks: '++id, docId, libraryId',
 })
 
