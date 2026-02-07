@@ -1,5 +1,10 @@
 'use client'
 
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Field, FieldGroup } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Card,
   CardHeader,
@@ -8,11 +13,6 @@ import {
   CardDescription,
   CardContent,
 } from '@/components/ui/card'
-
-import { Button } from '@/components/ui/button'
-import { Field, FieldGroup } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogClose,
@@ -37,7 +37,7 @@ import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   createLibrary,
   getAllLibraries,
@@ -45,7 +45,7 @@ import {
 } from '@/services/libraryService'
 import { getChineseStatus } from '@/lib/db'
 
-export default function DocList() {
+export default function LibList() {
   //控制Dialog显示
   const [isOpen, setIsOpen] = useState(false)
 
@@ -91,7 +91,7 @@ export default function DocList() {
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="gap-1">
               <Plus />
               新建仓库
             </Button>
@@ -140,8 +140,8 @@ export default function DocList() {
             </CardContent>
 
             <CardFooter className="bg-muted/50 border-t py-4 gap-3">
-              <Button variant="outline" size="sm" className="flex-1">
-                打开
+              <Button variant="outline" size="sm" className="flex-1" asChild>
+                <Link href={`knowledge/${lib.id}`}>打开</Link>
               </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>

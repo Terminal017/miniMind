@@ -28,7 +28,7 @@ type DocsType = {
   libraryId: number
   name: string
   rawText: string //纯文本内容
-  size: number //文件大小
+  size: number //文件大小,单位KB
   status: string //文档状态
   createdAt: Date
 }

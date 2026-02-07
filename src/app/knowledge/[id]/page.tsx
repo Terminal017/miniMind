@@ -1,4 +1,4 @@
-import LibList from './lib-list'
+import DocList from './doc-list'
 
 export default function KnowledgePage() {
   return (
@@ -8,7 +8,7 @@ export default function KnowledgePage() {
       pt-16"
       >
         <div className="flex flex-col items-center w-7/10">
-          <LibList />
+          <DocList />
         </div>
       </main>
     </>
