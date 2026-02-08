@@ -1,4 +1,5 @@
-// workers/parser.worker.ts
+// 大语言模型 (LLM) 加载、推理、Prompt 拼接、流式输出
+
 import { expose } from 'comlink'
 import type { ModelWorkerAPI } from '@/types/index'
 

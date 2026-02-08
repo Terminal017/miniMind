@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { wrap, Remote, releaseProxy } from 'comlink'
-import type { ModelWorkerAPI } from '@/types/index'
+import type { ModelWorkerAPI, DocWorkerAPI } from '@/types/index'
 
 //useModelLoading类型定义
 type ModelLoadingState = {
@@ -21,11 +21,11 @@ type WorkerInstance<T = any> = {
 //useWorkerManager类型定义
 type WorkerManagerState = {
   modelWorker: WorkerInstance<ModelWorkerAPI> | null
-  chunkWorker: any
+  docWorker: WorkerInstance<DocWorkerAPI> | null
   initModelWorker: () => void
   initDocWorker: () => void
   terminateModelWorker: () => void
-  terminateChunkWorker: () => void
+  terminateDocWorker: () => void
   cleanupAll: () => void
 }
 
@@ -43,7 +43,7 @@ const useModelLoading = create<ModelLoadingState>((set) => ({
 const useWorkerManager = create<WorkerManagerState>((set, get) => ({
   //Worker 通信代理和实例
   modelWorker: null, //{ worker, api }
-  chunkWorker: null,
+  docWorker: null,
 
   //初始化Worker
   initModelWorker: () => {
@@ -58,7 +58,14 @@ const useWorkerManager = create<WorkerManagerState>((set, get) => ({
   },
 
   initDocWorker: () => {
-    console.log('暂时无法运行')
+    console.log('初始化 Doc Worker...')
+    if (get().modelWorker) return
+    console.log('Web Worker初始化成功（Zustand）')
+    const worker = new Worker(
+      new URL('../workers/doc-worker.ts', import.meta.url),
+    )
+    const api = wrap<DocWorkerAPI>(worker)
+    set({ docWorker: { worker, api } })
   },
 
   //释放Worker
@@ -74,12 +81,20 @@ const useWorkerManager = create<WorkerManagerState>((set, get) => ({
     console.log('Model Worker已终止')
   },
 
-  terminateChunkWorker: () => {},
+  terminateDocWorker: () => {
+    const { docWorker } = get()
+    if (!docWorker) return
+
+    docWorker.api[releaseProxy]()
+    docWorker.worker.terminate()
+    set({ docWorker: null })
+    console.log('Doc Worker已终止')
+  },
 
   // 全局清理
   cleanupAll: () => {
     get().terminateModelWorker()
-    get().terminateChunkWorker()
+    get().terminateDocWorker()
   },
 }))
 

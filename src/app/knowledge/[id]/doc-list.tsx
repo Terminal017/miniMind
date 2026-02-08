@@ -15,18 +15,54 @@ import {
 
 import { columns, FileType } from './columns'
 import { DataTable } from './table'
-import {
-  addDocument,
-  getAllDocuments,
-  deleteDocuments,
-} from '@/services/documentService'
+import { getAllDocuments } from '@/services/documentService'
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useEffect } from 'react'
+import { useWorkerManager } from '@/store/ai-store'
+
+import { useRef } from 'react'
+import { toast } from 'sonner'
 
 export default function DocList() {
   const { id } = useParams()
-  console.log('当前知识库ID:', id)
 
+  //初始化文档处理Worker
+  const docWorker = useWorkerManager((state) => state.docWorker)
+  const initDocWorker = useWorkerManager((state) => state.initDocWorker)
+  useEffect(() => {
+    try {
+      initDocWorker()
+    } catch {
+      toast.error('错误：初始化Worker失败，请检查Web GPU与显卡支持')
+    }
+  }, [initDocWorker])
+
+  //获取文档列表
   const data = useLiveQuery(() => getAllDocuments(Number(id)) ?? [], []) ?? []
+
+  //定义导入文件的input引用，将它作为受控组件（React不推荐通过DOM操作实现受控组件）
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = event.target.files
+    if (!files || files.length === 0) return
+
+    const fileList = Array.from(files)
+    console.log('选中的文件:', fileList)
+    // toast.info(`开始处理 ${fileList.length} 个文件...`)
+
+    //采用同步方式逐个处理文件，减少内存占用
+    for (const file of fileList) {
+      try {
+        //获取二进制格式
+        const buffer = await file.arrayBuffer()
+        //交给Worker处理：解析、切片、向量化、添加到数据库
+        await docWorker?.api.processFile(buffer, file, Number(id))
+      } catch {
+        toast.info(`警告：处理文件 ${file.name} 失败`)
+      }
+    }
+  }
 
   return (
     <>
@@ -50,11 +86,19 @@ export default function DocList() {
         </div>
         <Button
           className="gap-1 "
-          onClick={() => addDocument(Number(id), '新文档', '这是文档内容', 100)}
+          onClick={() => fileInputRef.current?.click()}
         >
           批量导入
           <FolderUp />
         </Button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          onChange={handleFileChange}
+          multiple //允许多选
+          accept=".txt, .md, .pdf, .ts" //限制文件类型
+        />
       </div>
       <div className="w-full p-4">
         <DataTable columns={columns} data={data} />
