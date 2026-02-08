@@ -4,19 +4,18 @@ import { expose } from 'comlink'
 import type { DocWorkerAPI } from '@/types/index'
 import { addDocument } from '@/services/documentService'
 import { toast } from 'sonner'
-
-// 设置 PDF.js 的 Worker 线程（它会新开一个Worker来处理PDF解析，这个库只能用它自己定义的Worker）
+// 设置 PDF.js 的 Worker 线程（它会新开一个Worker来处理PDF解析，这个库只能用它自己定义的Worker或当前线程）
 //调用pdfjs.getDocument会自动通过这个配置创建新worker
-//这里为了同源策略，拷贝了一份到本地（它默认是从第三方网站获取）
-// pdfjs.GlobalWorkerOptions.workerSrc = '/lib/pdf.worker.min.mjs'
+//这里为了同源策略，拷贝了一份到本地（它默认是从第三方网站获取）。这个文件同样是配置文件。
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
 
-import { GlobalWorkerOptions } from 'pdfjs-dist'
-GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString()
-
-console.log(`Doc Worker初始化: ${Date.now().toLocaleString()}`)
+//经过测验，浏览器对于在worker中创建worker的支持很低，pdfjs尝试后自动失败进行回退
+//过滤对应警告
+const _warn = console.warn
+console.warn = (...args: any[]) => {
+  if (args[0]?.toString().includes('fake worker')) return
+  _warn(...args)
+}
 
 const api: DocWorkerAPI = {
   //处理文件：解析、切片、向量化
@@ -72,6 +71,7 @@ const api: DocWorkerAPI = {
       data, //文件二进制数据
       cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/', // 字符映射文件(处理中文)
       cMapPacked: true,
+      verbosity: pdfjs.VerbosityLevel.INFOS,
     })
 
     //解析PDF
