@@ -98,6 +98,7 @@ export const columns: ColumnDef<FileType>[] = [
             <AlertDialogContent size="sm">
               <AlertDialogHeader>
                 <AlertDialogTitle>确认删除文档吗</AlertDialogTitle>
+                <AlertDialogDescription></AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>取消</AlertDialogCancel>

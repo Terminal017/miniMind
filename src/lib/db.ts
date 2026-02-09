@@ -31,6 +31,8 @@ type DocsType = {
   size: number //文件大小,单位KB
   status: string //文档状态
   createdAt: Date
+  enabled: boolean //是否启用
+  metadata: object | null //额外信息，预留属性
 }
 
 type ChunkType = {
@@ -39,7 +41,7 @@ type ChunkType = {
   libraryId: number //所属知识库ID，优化查询
   content: string //切片文本内容
   embedding: number[] //向量表示
-  //metadata:object  //额外信息，后续做高亮时采用
+  // metadata: object //额外信息，预留属性
 }
 
 //创建Dexie数据库实例
@@ -52,7 +54,7 @@ const db = new Dexie('MinimindDB') as Dexie & {
 //定义主键和索引
 db.version(1).stores({
   libraries: '++id, name, status',
-  documents: '++id, libraryId, name, status',
+  documents: '++id, libraryId, name, status, enabled',
   chunks: '++id, docId, libraryId',
 })
 

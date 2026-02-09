@@ -57,6 +57,7 @@ export default function DocList() {
         //获取二进制格式
         const buffer = await file.arrayBuffer()
         //交给Worker处理：解析、切片、向量化、添加到数据库
+        console.log('使用worker', docWorker ? docWorker.worker : 'null')
         await docWorker?.api.processFile(buffer, file, Number(id))
       } catch {
         toast.info(`警告：处理文件 ${file.name} 失败`)

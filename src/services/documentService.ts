@@ -1,7 +1,6 @@
 // 文档CRUD
 
 import db from '@/lib/db'
-import { count } from 'console'
 
 //读取所有文档
 export async function getAllDocuments(LibraryId: number) {
@@ -52,6 +51,8 @@ export async function addDocument(
       size,
       status: 'ready',
       createdAt: new Date(),
+      enabled: true, //默认启用
+      metadata: null, //预留属性
     }
     const newId = await db.documents.add(newDocument)
     return { success: true, id: newId }
