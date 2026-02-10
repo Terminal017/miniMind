@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#worker打包文件
+/public/doc-worker-bundle.js
+/public/doc-worker-bundle.js.map

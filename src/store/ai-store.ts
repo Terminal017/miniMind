@@ -61,9 +61,7 @@ const useWorkerManager = create<WorkerManagerState>((set, get) => ({
     console.log('初始化 Doc Worker...')
     if (get().modelWorker) return
     console.log('Web Worker初始化成功（Zustand）')
-    const worker = new Worker(
-      new URL('../workers/doc-worker.ts', import.meta.url),
-    )
+    const worker = new Worker('/doc-worker-bundle.js', { type: 'module' })
     const api = wrap<DocWorkerAPI>(worker)
     set({ docWorker: { worker, api } })
   },

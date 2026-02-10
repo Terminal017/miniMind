@@ -12,4 +12,5 @@ export interface DocWorkerAPI {
   parsePDF: (arrayBuffer: ArrayBuffer) => Promise<string>
   parseMarkdown: (arrayBuffer: ArrayBuffer) => Promise<string>
   addDocument: (file: File, content: string, id: number) => Promise<void>
+  splitText: (text: string, extension: string) => Promise<string[]>
 }
