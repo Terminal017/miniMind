@@ -1,12 +1,10 @@
 //用于文章解析、切片、向量化和向量化模型下载的Web Worker
+//注意Worker中不能导入是使用Node API的库，可能发生错误
 import * as pdfjs from 'pdfjs-dist'
 import { expose } from 'comlink'
 import type { DocWorkerAPI } from '@/types/index'
 import { addDocument } from '@/services/documentService'
-import matter from 'front-matter'
-import { unified } from 'unified'
-import remarkParse from 'remark-parse'
-import { toString } from 'mdast-util-to-string'
+
 // 设置 PDF.js 的 Worker 线程（它会新开一个Worker来处理PDF解析，这个库只能用它自己定义的Worker或当前线程）
 //调用pdfjs.getDocument会自动通过这个配置创建新worker
 //这里为了同源策略，拷贝了一份到本地（它默认是从第三方网站获取）。这个文件同样是配置文件。
@@ -14,11 +12,11 @@ pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
 
 //经过测验，浏览器对于在worker中创建worker的支持很低，pdfjs尝试后自动失败进行回退
 //过滤对应警告
-// const _warn = console.warn
-// console.warn = (...args: any[]) => {
-//   if (args[0]?.toString().includes('fake worker')) return
-//   _warn(...args)
-// }
+const _warn = console.warn
+console.warn = (...args: any[]) => {
+  if (args[0]?.toString().includes('fake worker')) return
+  _warn(...args)
+}
 
 console.log('Worker Ready')
 
@@ -97,72 +95,94 @@ const api: DocWorkerAPI = {
     console.log('开始解析Markdown文件')
 
     const text = new TextDecoder('utf-8').decode(arrayBuffer)
-    //解析yaml数据（attributes），默认丢弃，body为主体内容
-    const { body } = matter(text)
 
-    // 3. 解析为 AST (语法树)
-    const { unified } = await import('unified')
-    const remarkParse = (await import('remark-parse')).default
+    // 移除 YAML Front Matter（如果存在）
+    let content = text.replace(/^---\s*\n[\s\S]*?\n---\s*\n/, '')
 
-    const processor = unified().use(remarkParse)
-    const ast = processor.parse(body)
+    const codeBlocks: string[] = []
+    content = content.replace(/```[\s\S]*?```/g, (m) => {
+      const key = `§§CODE_BLOCK${codeBlocks.length}§§`
+      codeBlocks.push(m)
+      return key
+    })
 
+    // 提取所有标题和内容块
     const results: string[] = []
-    let h1Text = '' // 一级标题（h1）
-    let currentSubHeader = '' // 当前标题（h2-h4）
+    let currentHeader = '' // 当前最外层标题
 
     // 文本清理函数
     const cleanMarkdownText = (rawText: string): string => {
       return rawText
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // 移除链接，保留文字
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // 移除链接
         .replace(/https?:\/\/[^\s]+/g, '') // 移除URL
         .replace(/!\[.*?\]\(.*?\)/g, '') // 移除图片
-        .replace(/[*_~]{1,2}([^*_~]+)[*_~]{1,2}/g, '$1') // 移除加粗/斜体/删除线
-        .replace(/`+([^`]+)`+/g, '$1') // 移除行内代码标记，保留内容
-        .replace(/\s+/g, ' ') // 多个空格合并为一个
+        .replace(/[*_~]{1,2}([^*_~]+)[*_~]{1,2}/g, '$1') // 移除格式标记
+        .replace(/^#+\s+/, '') // 移除标题标记
+        .replace(/\s+/g, ' ') // 合并空格
         .trim()
     }
 
-    // 3. 遍历节点
-    ast.children.forEach((node) => {
-      // 处理标题层级
-      if (node.type === 'heading') {
-        const titleText = toString(node)
-        if (node.depth === 1) {
-          h1Text = titleText
-          currentSubHeader = '' // 切换 H1 时清空二级缓存
-        } else if (node.depth >= 2 && node.depth <= 4) {
-          currentSubHeader = titleText
+    // 3. 按行分割处理
+    const lines = content.split('\n')
+    let currentParagraph = ''
+
+    for (const line of lines) {
+      const trimmed = line.trim()
+
+      // 处理标题
+      if (trimmed.startsWith('#')) {
+        // 先保存之前的段落
+        if (currentParagraph) {
+          const cleaned = cleanMarkdownText(currentParagraph)
+          if (cleaned) {
+            const prefix = currentHeader ? `[${currentHeader}] ` : ''
+            results.push(prefix + cleaned)
+          }
+          currentParagraph = ''
         }
-        return
-      }
 
-      // 处理正文（段落、列表、代码块等）
-      if (
-        node.type === 'paragraph' ||
-        node.type === 'list' ||
-        node.type === 'code'
-      ) {
-        //清理多余信息：去除URL、去除** _
-        let rawText = toString(node)
-        const cleanText = cleanMarkdownText(rawText)
-
-        if (cleanText) {
-          // 构造 [h1 > h2-h4] 前缀
-          const prefix = currentSubHeader
-            ? `[${h1Text} > ${currentSubHeader}] `
-            : h1Text
-            ? `[${h1Text}] `
-            : ''
-
-          results.push(prefix + cleanText)
+        // 更新标题（提取标题文本，去除#号）
+        const headerMatch = trimmed.match(/^#+\s+(.+)$/)
+        if (headerMatch) {
+          const title = headerMatch[1]
+          currentHeader = title
         }
       }
+      // 跳过空行和分隔线
+      else if (!trimmed || trimmed.match(/^[-*_]{3,}$/)) {
+        if (currentParagraph) {
+          const cleaned = cleanMarkdownText(currentParagraph)
+          if (cleaned) {
+            const prefix = currentHeader ? `[${currentHeader}] ` : ''
+            results.push(prefix + cleaned)
+          }
+          currentParagraph = ''
+        }
+      }
+      // 累积段落内容
+      else {
+        currentParagraph += (currentParagraph ? ' ' : '') + trimmed
+      }
+    }
+
+    // 处理最后一个段落
+    if (currentParagraph) {
+      const cleaned = cleanMarkdownText(currentParagraph)
+      if (cleaned) {
+        const prefix = currentHeader ? `[${currentHeader}] ` : ''
+        results.push(prefix + cleaned)
+      }
+    }
+
+    const finresults = results.map((res) => {
+      return res.replace(
+        /§§CODE_BLOCK(\d+)§§/g,
+        (_, i) => codeBlocks[Number(i)] ?? '',
+      )
     })
-    console.log('Markdown解析结果：', results)
-    // 返回解析后的文本数组，每一项代表一个带有上下文的语义段
+
+    console.log('Markdown解析结果：', finresults)
     return results.join('\n')
-    return ''
   },
 }
 
