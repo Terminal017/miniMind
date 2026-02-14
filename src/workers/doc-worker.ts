@@ -8,6 +8,7 @@ import {
   RecursiveCharacterTextSplitter,
   MarkdownTextSplitter,
 } from '@langchain/textsplitters'
+import { pipeline, env } from '@huggingface/transformers'
 
 // 设置 PDF.js 的 Worker 线程（它会新开一个Worker来处理PDF解析，这个库只能用它自己定义的Worker或当前线程）
 //调用pdfjs.getDocument会自动通过这个配置创建新worker
@@ -22,11 +23,27 @@ console.warn = (...args: any[]) => {
   _warn(...args)
 }
 
+//允许加载本地模型
+env.allowLocalModels = false
+//允许使用Cache Storage
+env.useBrowserCache = true
+
+//国内镜像源
+// env.remoteHost = 'https://hf-mirror.com';
+
+let embeddingModel: any = null
 console.log('Worker Ready')
 
 const api: DocWorkerAPI = {
   //处理文件：解析、切片、向量化
   async processFile(arrayBuffer: ArrayBuffer, file: File, id: number) {
+    //加载向量模型
+    if (!embeddingModel) {
+      await this.loadEmbedModel()
+    } else {
+      console.log('向量化模型命中缓存')
+    }
+
     console.log('Worker开始处理文件:', file.name)
     //获取文件后缀名
     const extension = file.name.split('.').pop()?.toLowerCase()
@@ -156,6 +173,51 @@ const api: DocWorkerAPI = {
     const chunks = docs.map((doc) => doc.pageContent)
     console.log('文本切片结果：', chunks)
     return chunks
+  },
+
+  //向量化模型加载
+  async loadEmbedModel() {
+    if (embeddingModel) {
+      console.log('模型已存在', embeddingModel)
+      return
+    }
+    try {
+      console.log('开始加载向量模型 (尝试使用 WebGPU)...')
+
+      // 初始化 pipeline
+      // 参数: 任务类型 (feature-extraction 是专门用来做向量化的)
+      // 模型名称 (bge-small-zh-v1.5 是中文向量化的轻量模型，约100MB，后续可考虑base和large)
+      embeddingModel = await pipeline(
+        'feature-extraction',
+        'Xenova/bge-small-zh-v1.5',
+        {
+          // 指定使用 WebGPU 加速。
+          device: 'webgpu',
+
+          // 进度回调：Transformers.js 会密集地触发这个回调，报告下载进度
+          // progress_callback: (progressData: any) => {
+          //   // progressData 格式: { status: 'downloading', name: 'model.onnx', progress: 54.3 }
+          // }
+        },
+      )
+
+      console.log('WebGPU 向量模型加载完毕')
+    } catch (error) {
+      console.warn('WebGPU 初始化失败，正在降级到 WASM (CPU) 模式...', error)
+
+      // 降级方案：如果用户的浏览器不支持 WebGPU，自动回退到 WASM
+      embeddingModel = await pipeline(
+        'feature-extraction',
+        'Xenova/bge-small-zh-v1.5',
+        { device: 'wasm' },
+      )
+      console.log('WASM (CPU) 向量模型加载成功！')
+    }
+  },
+
+  //文本向量化
+  async embedChunk(text: string) {
+    return []
   },
 }
 

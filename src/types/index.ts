@@ -13,4 +13,6 @@ export interface DocWorkerAPI {
   parseMarkdown: (arrayBuffer: ArrayBuffer) => Promise<string>
   addDocument: (file: File, content: string, id: number) => Promise<void>
   splitText: (text: string, extension: string) => Promise<string[]>
+  loadEmbedModel: () => Promise<void>
+  embedChunk: (text: string) => Promise<number[]>
 }
