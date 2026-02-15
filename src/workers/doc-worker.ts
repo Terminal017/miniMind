@@ -36,10 +36,17 @@ console.log('Worker Ready')
 
 const api: DocWorkerAPI = {
   //处理文件：解析、切片、向量化
-  async processFile(arrayBuffer: ArrayBuffer, file: File, id: number) {
+  async processFile(
+    arrayBuffer: ArrayBuffer,
+    file: File,
+    id: number,
+    onProgress: (data: { progress: number }) => void,
+  ) {
     //加载向量模型
     if (!embeddingModel) {
-      await this.loadEmbedModel()
+      console.log('开始下载向量化模型（worker）')
+      await this.loadEmbedModel(onProgress)
+      console.log('向量化模型下载成功（worker）')
     } else {
       console.log('向量化模型命中缓存')
     }
@@ -176,7 +183,7 @@ const api: DocWorkerAPI = {
   },
 
   //向量化模型加载
-  async loadEmbedModel() {
+  async loadEmbedModel(onProgress: (data: { progress: number }) => void) {
     if (embeddingModel) {
       console.log('模型已存在', embeddingModel)
       return
@@ -193,11 +200,13 @@ const api: DocWorkerAPI = {
         {
           // 指定使用 WebGPU 加速。
           device: 'webgpu',
+          dtype: 'fp32',
 
           // 进度回调：Transformers.js 会密集地触发这个回调，报告下载进度
-          // progress_callback: (progressData: any) => {
-          //   // progressData 格式: { status: 'downloading', name: 'model.onnx', progress: 54.3 }
-          // }
+          // progressData 格式: { status: 'downloading', name: 'model.onnx', progress: 54.3 }
+          progress_callback: (progressData: any) => {
+            onProgress({ progress: progressData.progress || 0 })
+          },
         },
       )
 
@@ -205,11 +214,17 @@ const api: DocWorkerAPI = {
     } catch (error) {
       console.warn('WebGPU 初始化失败，正在降级到 WASM (CPU) 模式...', error)
 
-      // 降级方案：如果用户的浏览器不支持 WebGPU，自动回退到 WASM
+      // 降级方案：如果用户的浏览器不支持 WebGPU，回退到 WASM
       embeddingModel = await pipeline(
         'feature-extraction',
         'Xenova/bge-small-zh-v1.5',
-        { device: 'wasm' },
+        {
+          device: 'wasm',
+          dtype: 'fp16',
+          progress_callback: (progressData: any) => {
+            onProgress({ progress: progressData.progress || 0 })
+          },
+        },
       )
       console.log('WASM (CPU) 向量模型加载成功！')
     }

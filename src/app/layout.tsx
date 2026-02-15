@@ -21,7 +21,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-background text-foreground">
         <HeaderCom />
         {children}
-        <Toaster />
+        <Toaster expand />
       </body>
     </html>
   )
