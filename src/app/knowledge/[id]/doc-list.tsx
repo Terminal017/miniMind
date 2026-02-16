@@ -21,14 +21,17 @@ import { useEffect } from 'react'
 import { useWorkerManager } from '@/store/ai-store'
 import { LoadModelProgress } from './progress'
 import * as Comlink from 'comlink'
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { toast } from 'sonner'
+import { useEmbedModelLoading } from '@/store/ai-store'
 
 export default function DocList() {
   const { id } = useParams()
 
-  // 向量化模型下载进度
-  // const [modelProgress, setModelProgress] = useState(0)
+  // 向量化模型下载进度管理
+  const setModelLoading = useEmbedModelLoading((state) => state.setLoadProcess)
+  const resetProcess = useEmbedModelLoading((state) => state.resetProcess)
+
   // 模型下载进度提示ref
   const modelToastRef = useRef<string | number | undefined>(undefined)
   // 节流控制
@@ -89,40 +92,31 @@ export default function DocList() {
     }
     lastUpdateTime.current = now
 
+    // 模型下载完成
+    if (modelToastRef.current && v >= 100) {
+      //更新为下载完成提示
+      toast.success('模型下载完成', {
+        id: modelToastRef.current,
+        description: null,
+        duration: 2000,
+      })
+
+      //重置ref
+      modelToastRef.current = undefined
+      resetProcess() //重置进度状态
+    }
+
     //模型开始下载提示
     if (!modelToastRef.current && v > 0 && v < 100) {
       modelToastRef.current = toast('', {
-        description: <LoadModelProgress task="下载向量化模型" progress={v} />,
+        description: <LoadModelProgress />,
         duration: Infinity,
         position: 'top-right',
       })
       return
-    }
-
-    // 模型下载进度提示
-    if (modelToastRef.current && v < 100) {
-      toast('', {
-        id: modelToastRef.current, // 传入 ID 告诉 Sonner 以更新同一个 Toast
-        description: <LoadModelProgress task="下载向量化模型" progress={v} />,
-        position: 'top-right',
-      })
-      return
-    }
-
-    // 模型下载完成
-    if (modelToastRef.current && v >= 100) {
-      const toastId = modelToastRef.current
-
-      //防止重复执行
-      if (toastId === undefined) return
-      //重置ref
-      modelToastRef.current = undefined
-      //更新为下载完成提示
-      toast.success('模型下载完成', {
-        id: toastId,
-        description: null,
-        duration: 2000,
-      })
+    } else {
+      //更新下载进度
+      setModelLoading(v)
     }
   }
 

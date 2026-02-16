@@ -4,12 +4,11 @@ import type { ModelWorkerAPI, DocWorkerAPI } from '@/types/index'
 
 //useModelLoading类型定义
 type ModelLoadingState = {
-  isWebGPUSupported: boolean
   loadStatus: 'empty' | 'loading' | 'loaded' | 'error'
   loadProcess: number
   setLoadStatus: (status: 'empty' | 'loading' | 'loaded' | 'error') => void
   setLoadProcess: (process: number) => void
-  setIsWebGPUSupported: (supported: boolean) => void
+  resetProcess: () => void
 }
 
 //定义worker和通信代理类型
@@ -29,14 +28,13 @@ type WorkerManagerState = {
   cleanupAll: () => void
 }
 
-//store用于管理模型加载状态
-const useModelLoading = create<ModelLoadingState>((set) => ({
-  isWebGPUSupported: false, //WebGPU 支持
-  loadStatus: 'empty', //模型下载状态
+//用于管理向量化模型加载状态
+const useEmbedModelLoading = create<ModelLoadingState>((set) => ({
+  loadStatus: 'empty', //模型下载状态（预留）
   loadProcess: 0, //模型下载进度
   setLoadStatus: (status) => set({ loadStatus: status }),
   setLoadProcess: (process) => set({ loadProcess: process }),
-  setIsWebGPUSupported: (supported) => set({ isWebGPUSupported: supported }),
+  resetProcess: () => set({ loadStatus: 'empty', loadProcess: 0 }),
 }))
 
 // 管理全局Web Worker
@@ -96,4 +94,4 @@ const useWorkerManager = create<WorkerManagerState>((set, get) => ({
   },
 }))
 
-export { useModelLoading, useWorkerManager }
+export { useEmbedModelLoading, useWorkerManager }
