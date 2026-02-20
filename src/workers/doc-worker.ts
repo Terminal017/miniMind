@@ -3,12 +3,17 @@
 import * as pdfjs from 'pdfjs-dist'
 import { expose } from 'comlink'
 import type { DocWorkerAPI } from '@/types/index'
-import { addDocument } from '@/services/documentService'
+import { addDocument, deleteDocuments } from '@/services/documentService'
 import {
   RecursiveCharacterTextSplitter,
   MarkdownTextSplitter,
 } from '@langchain/textsplitters'
-import { pipeline, env } from '@huggingface/transformers'
+import {
+  pipeline,
+  env,
+  FeatureExtractionPipeline,
+} from '@huggingface/transformers'
+import { addAllChunks, deleteDocChunks } from '@/services/chunkService'
 
 // 设置 PDF.js 的 Worker 线程（它会新开一个Worker来处理PDF解析，这个库只能用它自己定义的Worker或当前线程）
 //调用pdfjs.getDocument会自动通过这个配置创建新worker
@@ -31,7 +36,7 @@ env.useBrowserCache = true
 //国内镜像源
 // env.remoteHost = 'https://hf-mirror.com';
 
-let embeddingModel: any = null
+let embeddingModel: FeatureExtractionPipeline | null = null
 console.log('Worker Ready')
 
 const api: DocWorkerAPI = {
@@ -52,50 +57,59 @@ const api: DocWorkerAPI = {
     }
 
     console.log('Worker开始处理文件:', file.name)
-    //获取文件后缀名
-    const extension = file.name.split('.').pop()?.toLowerCase()
-    let rawText = ''
 
-    //解析文件获取纯文本
-    switch (extension) {
-      case 'txt':
-        rawText = new TextDecoder('utf-8').decode(arrayBuffer)
-        break
-      case 'pdf':
-        rawText = await this.parsePDF(arrayBuffer)
-        break
-      case 'md':
-        rawText = await this.parseMarkdown(arrayBuffer)
-        break
-      default:
-        // 其他文本处理
-        rawText = new TextDecoder('utf-8').decode(arrayBuffer)
-    }
-    //添加纯文本到document表
-    await this.addDocument(file, rawText, id)
+    let docId: number | null = null
+    try {
+      //获取文件后缀名
+      const extension = file.name.split('.').pop()?.toLowerCase()
+      let rawText = ''
 
-    //切片文本
-    const chunks = await this.splitText(rawText, extension as string)
-  },
+      //解析文件获取纯文本
+      switch (extension) {
+        case 'txt':
+          rawText = new TextDecoder('utf-8').decode(arrayBuffer)
+          break
+        case 'pdf':
+          rawText = await this.parsePDF(arrayBuffer)
+          break
+        case 'md':
+          rawText = await this.parseMarkdown(arrayBuffer)
+          break
+        default:
+          // 其他文本处理
+          rawText = new TextDecoder('utf-8').decode(arrayBuffer)
+      }
 
-  //添加文档到数据库
-  async addDocument(file: File, content: string, id: number) {
-    const size = new Blob([content]).size
-    const filedata = {
-      name: file.name,
-      size: size,
-      rawText: content,
-      libraryId: id,
-    }
-    const result = await addDocument(
-      filedata.libraryId,
-      filedata.name,
-      filedata.rawText,
-      filedata.size,
-    )
-    console.log('Worker处理完毕')
-    if (!result.success) {
-      console.error(`添加文件 ${file.name} 失败`)
+      //添加纯文本到document表并获取docId
+      const size = new Blob([rawText]).size
+      const data = await addDocument(id, file.name, rawText, size)
+      if (!data.success) {
+        throw new Error('添加文档失败')
+      }
+      docId = data.id as number
+
+      //切片文本
+      const chunks = await this.splitText(rawText, extension as string)
+
+      const vectors = await this.vectorizeChunks(chunks)
+
+      //添加切片和向量到chunk表
+      const chunkResult = await addAllChunks(id, docId, chunks, vectors)
+      if (!chunkResult.success) {
+        throw new Error('添加切片失败')
+      }
+    } catch (error) {
+      console.error('Worker处理文件失败:', error)
+      //回滚数据库文档
+      if (docId) {
+        try {
+          await deleteDocuments([docId])
+          await deleteDocChunks(docId)
+        } catch (error) {
+          console.error('Worker回滚数据失败:', error)
+        }
+      }
+      throw error
     }
   },
 
@@ -194,7 +208,8 @@ const api: DocWorkerAPI = {
       // 初始化 pipeline
       // 参数: 任务类型 (feature-extraction 是专门用来做向量化的)
       // 模型名称 (bge-small-zh-v1.5 是中文向量化的轻量模型，约100MB，后续可考虑base和large)
-      embeddingModel = await pipeline(
+      //@ts-ignore
+      embeddingModel = (await pipeline(
         'feature-extraction',
         'Xenova/bge-small-zh-v1.5',
         {
@@ -208,7 +223,7 @@ const api: DocWorkerAPI = {
             onProgress({ progress: progressData.progress || 0 })
           },
         },
-      )
+      )) as FeatureExtractionPipeline
 
       console.log('WebGPU 向量模型加载完毕')
     } catch (error) {
@@ -231,8 +246,35 @@ const api: DocWorkerAPI = {
   },
 
   //文本向量化
-  async embedChunk(text: string) {
-    return []
+  async vectorizeChunks(chunks: string[]) {
+    if (!embeddingModel) {
+      throw new Error('错误：模型未加载')
+    }
+
+    const vectors = []
+    const total = chunks.length
+
+    for (let i = 0; i < total; i++) {
+      const chunk = chunks[i]
+
+      // 向量化文本切片
+      const output = await embeddingModel(chunk, {
+        pooling: 'mean', //平均池化
+        normalize: true, //归一化
+      })
+
+      vectors.push(Array.from(output.data) as number[])
+
+      // if (onProgress) {
+      //   onProgress({
+      //     status: 'vectorizing',
+      //     current: i + 1,
+      //     total,
+      //     percentage: Math.round(((i + 1) / total) * 100),
+      //   })
+      // }
+    }
+    return vectors
   },
 }
 
