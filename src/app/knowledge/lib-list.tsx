@@ -43,6 +43,7 @@ import {
   getAllLibraries,
   deleteLibrary,
 } from '@/services/libraryService'
+import { deleteDocumentInf, getAllDocuments } from '@/services/documentService'
 import { getChineseStatus } from '@/lib/db'
 
 export default function LibList() {
@@ -73,6 +74,20 @@ export default function LibList() {
 
   //删除知识库
   async function handleDelete(libraryId: number) {
+    //删除库内所有文档和chunks
+    const documents = await getAllDocuments(libraryId)
+    for (const doc of documents) {
+      const res = await deleteDocumentInf(doc.id)
+      if (!res.success) {
+        toast.error(`删除文档 ${doc.name} 失败`, {
+          className: 'text-base',
+          position: 'bottom-right',
+        })
+        return
+      }
+    }
+
+    //上述文件删除成功后删除知识库
     const result = await deleteLibrary(libraryId)
     if (result.success) {
       toast.success('仓库删除成功', {

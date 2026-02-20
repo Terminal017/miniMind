@@ -29,8 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { deleteDocuments } from '@/services/documentService'
-import { deleteDocChunks } from '@/services/chunkService'
+import { deleteDocumentInf } from '@/services/documentService'
 import { toast } from 'sonner'
 
 //数据表格组件的 Props 类型定义（泛型自动推断）
@@ -79,21 +78,14 @@ export function DataTable<TData, TValue>({
 
     //删除文档对应的chunks
     for (const docId of selectedIds) {
-      const res = await deleteDocChunks(docId)
+      const res = await deleteDocumentInf(docId)
       if (!res.success) {
-        toast.info(`删除文档 ${docId} chunks 失败`)
+        toast.error(`删除文档 ${docId} 失败`)
         return
       }
     }
-    //批量删除文档
-    const result = await deleteDocuments(selectedIds)
 
     table.resetRowSelection() //重置选择状态
-    if (result.success) {
-      toast.success('删除成功')
-    } else {
-      toast.info('警告：批量删除文档错误')
-    }
   }
 
   return (

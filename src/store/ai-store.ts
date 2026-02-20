@@ -11,6 +11,19 @@ type ModelLoadingState = {
   resetProcess: () => void
 }
 
+// useFileProcessing类型定义
+type FileProcessingState = {
+  loadStatus: 'empty' | 'processing' | 'completed' | 'error'
+  currentFile: number
+  totalFiles: number
+  setLoadStatus: (
+    status: 'empty' | 'processing' | 'completed' | 'error',
+  ) => void
+  increaseCurrentFile: () => void
+  setTotalFiles: (total: number) => void
+  resetProcess: () => void
+}
+
 //定义worker和通信代理类型
 type WorkerInstance<T = any> = {
   worker: Worker
@@ -35,6 +48,25 @@ const useEmbedModelLoading = create<ModelLoadingState>((set) => ({
   setLoadStatus: (status) => set({ loadStatus: status }),
   setLoadProcess: (process) => set({ loadProcess: process }),
   resetProcess: () => set({ loadStatus: 'empty', loadProcess: 0 }),
+}))
+
+//管理文章处理进度状态
+const useFileProcessing = create<FileProcessingState>((set) => ({
+  loadStatus: 'empty', //文件处理状态
+  currentFile: 0, //当前处理文件
+  totalFiles: 0, //总文件数
+  setLoadStatus: (status) => set({ loadStatus: status }),
+  increaseCurrentFile: () =>
+    set((state) => ({
+      currentFile: state.currentFile + 1,
+    })),
+  setTotalFiles: (total) => set({ totalFiles: total }),
+  resetProcess: () =>
+    set({
+      loadStatus: 'empty',
+      currentFile: 0,
+      totalFiles: 0,
+    }),
 }))
 
 // 管理全局Web Worker
@@ -94,4 +126,4 @@ const useWorkerManager = create<WorkerManagerState>((set, get) => ({
   },
 }))
 
-export { useEmbedModelLoading, useWorkerManager }
+export { useEmbedModelLoading, useWorkerManager, useFileProcessing }

@@ -1,8 +1,7 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Trash2 } from 'lucide-react'
-import { deleteDocuments } from '@/services/documentService'
-import { deleteDocChunks } from '@/services/chunkService'
+import { deleteDocumentInf } from '@/services/documentService'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import {
@@ -28,16 +27,10 @@ export type FileType = {
 
 //删除单个文档
 async function handleDeleteFile(fileId: number) {
-  const result = await deleteDocChunks(fileId)
+  const result = await deleteDocumentInf(fileId)
   if (!result.success) {
-    toast.error('警告：删除chunks错误')
+    toast.error('错误：删除文档失败')
     return
-  }
-  const result2 = await deleteDocuments([fileId])
-  if (result2.success) {
-    toast.success(`删除成功`)
-  } else {
-    toast.error('警告：删除文档错误')
   }
 }
 

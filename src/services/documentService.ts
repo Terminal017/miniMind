@@ -36,6 +36,17 @@ export async function deleteDocuments(idList: number[]) {
   }
 }
 
+//删除单个文件和Chunks
+export async function deleteDocumentInf(docId: number) {
+  try {
+    await db.chunks.where('docId').equals(docId).delete()
+    await db.documents.delete(docId)
+    return { success: true }
+  } catch (error) {
+    return { success: false }
+  }
+}
+
 //添加文档
 export async function addDocument(
   libraryId: number,
