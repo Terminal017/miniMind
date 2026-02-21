@@ -25,15 +25,6 @@ export type FileType = {
   status: string
 }
 
-//删除单个文档
-async function handleDeleteFile(fileId: number) {
-  const result = await deleteDocumentInf(fileId)
-  if (!result.success) {
-    toast.error('错误：删除文档失败')
-    return
-  }
-}
-
 //配置表格列定义
 export const columns: ColumnDef<FileType>[] = [
   {
@@ -67,7 +58,10 @@ export const columns: ColumnDef<FileType>[] = [
   {
     accessorKey: 'size',
     header: '大小',
-    cell: ({ row }) => `${row.original.size} KB`,
+    cell: ({ row }) =>
+      row.original.size > 1024
+        ? `${(row.original.size / 1024).toFixed(2)} MB`
+        : `${row.original.size} KB`,
   },
   {
     accessorKey: 'createdAt',
@@ -82,7 +76,17 @@ export const columns: ColumnDef<FileType>[] = [
     id: 'actions',
     header: () => <p className="text-center">操作</p>,
     cell: ({ row }) => {
-      const fileId = row.original.id
+      //删除单个文档
+      async function handleDeleteFile() {
+        // 删除前先取消选择该行
+        row.toggleSelected(false)
+        const result = await deleteDocumentInf(row.original.id)
+        if (!result.success) {
+          toast.error('错误：删除文档失败')
+          return
+        }
+      }
+
       return (
         <div className="flex flex-row justify-center">
           <AlertDialog>
@@ -102,7 +106,7 @@ export const columns: ColumnDef<FileType>[] = [
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>取消</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleDeleteFile(fileId)}>
+                <AlertDialogAction onClick={() => handleDeleteFile()}>
                   确认
                 </AlertDialogAction>
               </AlertDialogFooter>
