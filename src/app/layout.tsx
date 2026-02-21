@@ -19,8 +19,10 @@ export default function RootLayout({
   return (
     <html lang="zh-cn">
       <body className="min-h-screen bg-background text-foreground">
-        <HeaderCom />
-        {children}
+        <div className="flex flex-col min-h-screen">
+          <HeaderCom />
+          <main className="flex-1 overflow-hidden">{children}</main>
+        </div>
         <Toaster expand />
       </body>
     </html>

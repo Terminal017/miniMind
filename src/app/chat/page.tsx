@@ -1,10 +1,9 @@
-import AILoadingComponent from '@/workers/workerClient'
+import WelcomeCom from './welcome'
 
 export default function ChatPage() {
   return (
-    <div>
-      <h1>Chat</h1>
-      <AILoadingComponent />
-    </div>
+    <>
+      <WelcomeCom />
+    </>
   )
 }

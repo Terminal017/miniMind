@@ -12,7 +12,7 @@ export default function HeaderCom() {
   return (
     <>
       <header
-        className="fixed top-0 left-0 w-full h-14 z-50 bg-white 
+        className="w-full h-14 z-50 bg-white sticky top-0
       border-border border-b border-solid"
       >
         <nav className="h-full max-w-4/5 flex flex-row justify-between items-center px-8 mx-auto">
