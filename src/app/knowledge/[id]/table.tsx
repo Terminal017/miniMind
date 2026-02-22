@@ -86,6 +86,7 @@ export function DataTable<TData, TValue>({
     }
 
     table.resetRowSelection() //重置选择状态
+    toast.success('文档删除成功')
   }
 
   return (

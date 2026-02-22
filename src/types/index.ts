@@ -1,6 +1,7 @@
 export interface ModelWorkerAPI {
-  content: string
-  output: (input: string) => string
+  loadGLModel: (
+    onProgress: (data: { progress: number }) => void,
+  ) => Promise<void>
 }
 
 export interface DocWorkerAPI {

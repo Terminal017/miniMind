@@ -5,10 +5,10 @@ import type { ModelWorkerAPI, DocWorkerAPI } from '@/types/index'
 //useModelLoading类型定义
 type ModelLoadingState = {
   loadStatus: 'empty' | 'loading' | 'loaded' | 'error'
-  loadProcess: number
+  loadProgress: number
   setLoadStatus: (status: 'empty' | 'loading' | 'loaded' | 'error') => void
-  setLoadProcess: (process: number) => void
-  resetProcess: () => void
+  setLoadProgress: (process: number) => void
+  resetProgress: () => void
 }
 
 // useFileProcessing类型定义
@@ -41,13 +41,22 @@ type WorkerManagerState = {
   cleanupAll: () => void
 }
 
+//用于管理生成式语言模型加载状态
+const useGLModelLoading = create<ModelLoadingState>((set) => ({
+  loadStatus: 'empty', //模型下载状态（预留）
+  loadProgress: 0, //模型下载进度
+  setLoadStatus: (status) => set({ loadStatus: status }),
+  setLoadProgress: (process) => set({ loadProgress: process }),
+  resetProgress: () => set({ loadStatus: 'empty', loadProgress: 0 }),
+}))
+
 //用于管理向量化模型加载状态
 const useEmbedModelLoading = create<ModelLoadingState>((set) => ({
   loadStatus: 'empty', //模型下载状态（预留）
-  loadProcess: 0, //模型下载进度
+  loadProgress: 0, //模型下载进度
   setLoadStatus: (status) => set({ loadStatus: status }),
-  setLoadProcess: (process) => set({ loadProcess: process }),
-  resetProcess: () => set({ loadStatus: 'empty', loadProcess: 0 }),
+  setLoadProgress: (process) => set({ loadProgress: process }),
+  resetProgress: () => set({ loadStatus: 'empty', loadProgress: 0 }),
 }))
 
 //管理文章处理进度状态
@@ -80,9 +89,7 @@ const useWorkerManager = create<WorkerManagerState>((set, get) => ({
     console.log('初始化 Model Worker...')
     if (get().modelWorker) return
     console.log('Web Worker初始化成功（Zustand）')
-    const worker = new Worker(
-      new URL('../workers/model-worker.ts', import.meta.url),
-    )
+    const worker = new Worker('/model-worker-bundle.js', { type: 'module' })
     const api = wrap<ModelWorkerAPI>(worker)
     set({ modelWorker: { worker, api } })
   },
@@ -126,4 +133,9 @@ const useWorkerManager = create<WorkerManagerState>((set, get) => ({
   },
 }))
 
-export { useEmbedModelLoading, useWorkerManager, useFileProcessing }
+export {
+  useGLModelLoading,
+  useEmbedModelLoading,
+  useWorkerManager,
+  useFileProcessing,
+}

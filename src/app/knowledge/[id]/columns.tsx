@@ -81,9 +81,10 @@ export const columns: ColumnDef<FileType>[] = [
         // 删除前先取消选择该行
         row.toggleSelected(false)
         const result = await deleteDocumentInf(row.original.id)
-        if (!result.success) {
+        if (result.success) {
+          toast.success('文档删除成功')
+        } else {
           toast.error('错误：删除文档失败')
-          return
         }
       }
 

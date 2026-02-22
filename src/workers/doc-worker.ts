@@ -36,7 +36,10 @@ env.useBrowserCache = true
 //国内镜像源
 // env.remoteHost = 'https://hf-mirror.com';
 
+//模型变量
 let embeddingModel: FeatureExtractionPipeline | null = null
+//Promise锁，避免模型下载过程中触发新的下载，并且允许等待完成后进行后续请求
+let embeddingModelLock: Promise<void> | null = null
 console.log('Worker Ready')
 
 const api: DocWorkerAPI = {
@@ -198,51 +201,65 @@ const api: DocWorkerAPI = {
 
   //向量化模型加载
   async loadEmbedModel(onProgress: (data: { progress: number }) => void) {
+    //如果正在下载，则等待下载完成
+    if (embeddingModelLock) {
+      await embeddingModelLock
+      return
+    }
+
     if (embeddingModel) {
       console.log('模型已存在', embeddingModel)
       return
     }
-    try {
-      console.log('开始加载向量模型 (尝试使用 WebGPU)...')
 
-      // 初始化 pipeline
-      // 参数: 任务类型 (feature-extraction 是专门用来做向量化的)
-      // 模型名称 (bge-small-zh-v1.5 是中文向量化的轻量模型，约100MB，后续可考虑base和large)
-      //@ts-ignore
-      embeddingModel = (await pipeline(
-        'feature-extraction',
-        'Xenova/bge-small-zh-v1.5',
-        {
-          // 指定使用 WebGPU 加速。
-          device: 'webgpu',
-          dtype: 'fp32',
+    //创建锁（没有awiat，这里是Promise本身）
+    embeddingModelLock = (async () => {
+      try {
+        console.log('开始加载向量模型 (尝试使用 WebGPU)...')
 
-          // 进度回调：Transformers.js 会密集地触发这个回调，报告下载进度
-          // progressData 格式: { status: 'downloading', name: 'model.onnx', progress: 54.3 }
-          progress_callback: (progressData: any) => {
-            onProgress({ progress: progressData.progress || 0 })
+        // 初始化 pipeline
+        // 参数: 任务类型 (feature-extraction 是专门用来做向量化的)
+        // 模型名称 (bge-small-zh-v1.5 是中文向量化的轻量模型，约100MB，后续可考虑base和large)
+        //@ts-ignore
+        embeddingModel = (await pipeline(
+          'feature-extraction',
+          'Xenova/bge-small-zh-v1.5',
+          {
+            // 指定使用 WebGPU 加速。
+            device: 'webgpu',
+            dtype: 'fp32',
+
+            // 进度回调：Transformers.js 会密集地触发这个回调，报告下载进度
+            // progressData 格式: { status: 'downloading', name: 'model.onnx', progress: 54.3 }
+            progress_callback: (progressData: any) => {
+              onProgress({ progress: progressData.progress || 0 })
+            },
           },
-        },
-      )) as FeatureExtractionPipeline
+        )) as FeatureExtractionPipeline
 
-      console.log('WebGPU 向量模型加载完毕')
-    } catch (error) {
-      console.warn('WebGPU 初始化失败，正在降级到 WASM (CPU) 模式...', error)
+        console.log('WebGPU 向量模型加载完毕')
+      } catch (error) {
+        console.warn('WebGPU 初始化失败，正在降级到 WASM (CPU) 模式...', error)
 
-      // 降级方案：如果用户的浏览器不支持 WebGPU，回退到 WASM
-      embeddingModel = await pipeline(
-        'feature-extraction',
-        'Xenova/bge-small-zh-v1.5',
-        {
-          device: 'wasm',
-          dtype: 'fp16',
-          progress_callback: (progressData: any) => {
-            onProgress({ progress: progressData.progress || 0 })
+        // 降级方案：如果用户的浏览器不支持 WebGPU，回退到 WASM
+        embeddingModel = await pipeline(
+          'feature-extraction',
+          'Xenova/bge-small-zh-v1.5',
+          {
+            device: 'wasm',
+            dtype: 'fp16',
+            progress_callback: (progressData: any) => {
+              onProgress({ progress: progressData.progress || 0 })
+            },
           },
-        },
-      )
-      console.log('WASM (CPU) 向量模型加载成功！')
-    }
+        )
+        console.log('WASM (CPU) 向量模型加载成功！')
+      } finally {
+        embeddingModelLock = null
+      }
+    })()
+
+    return embeddingModelLock
   },
 
   //文本向量化
@@ -264,15 +281,6 @@ const api: DocWorkerAPI = {
       })
 
       vectors.push(Array.from(output.data) as number[])
-
-      // if (onProgress) {
-      //   onProgress({
-      //     status: 'vectorizing',
-      //     current: i + 1,
-      //     total,
-      //     percentage: Math.round(((i + 1) / total) * 100),
-      //   })
-      // }
     }
     return vectors
   },

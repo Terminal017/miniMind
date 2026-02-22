@@ -3,7 +3,7 @@ import { Progress } from '@/components/ui/progress'
 import { useEmbedModelLoading, useFileProcessing } from '@/store/ai-store'
 
 export function LoadModelProgress() {
-  const progress = useEmbedModelLoading((state) => state.loadProcess)
+  const progress = useEmbedModelLoading((state) => state.loadProgress)
 
   return (
     <Field className="min-w-73 mx-2">
