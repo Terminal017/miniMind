@@ -1,15 +1,40 @@
+'use client'
+
 import { useGLModelLoading } from '@/store/ai-store'
 import { LoadGLModelProgress } from '../progress'
 import { useModelLoading } from '@/hooks/use-modelProgress'
 import { useState, useEffect, useRef } from 'react'
 import { useWorkerManager } from '@/store/ai-store'
-import { useParams } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import * as Comlink from 'comlink'
 import { toast } from 'sonner'
+import { checkSession } from '@/services/sessionService'
 
 export default function ChatCom() {
-  const { id } = useParams()
-  console.log('当前会话ID:', id)
+  const { sessionId } = useParams()
+  console.log('当前会话ID:', Number(sessionId))
+
+  const [sessionExists, setSessionExists] = useState<boolean | null>(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    const validateSession = async () => {
+      const exists = await checkSession(Number(sessionId))
+
+      if (!exists) {
+        toast.error('会话不存在', {
+          className: 'text-base',
+          position: 'bottom-right',
+        })
+        router.push('/chat') // 重定向到默认页面
+        return
+      }
+
+      setSessionExists(true)
+    }
+
+    validateSession()
+  }, [sessionId, router])
 
   //初始化模型下载Worker
   const modelWorker = useWorkerManager((state) => state.modelWorker)
@@ -26,9 +51,13 @@ export default function ChatCom() {
 
   useEffect(() => {
     try {
+      if (sessionExists !== true) {
+        return
+      }
       //初始化Worker
       if (!modelWorker) {
         initmodelWorker()
+        return
       }
       const loadModel = async () => {
         await modelWorker?.api.loadGLModel(Comlink.proxy(getLoadingModel))
@@ -40,11 +69,11 @@ export default function ChatCom() {
         position: 'bottom-right',
       })
     }
-  }, [modelWorker, getLoadingModel])
+  }, [modelWorker, sessionExists])
 
   return (
     <>
-      <div></div>
+      <div>进入Chat页面</div>
     </>
   )
 }

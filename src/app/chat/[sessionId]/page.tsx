@@ -1,6 +1,7 @@
 import ChatCom from './chatCom'
+// import { checkSession } from '@/services/sessionService'
 
-export default function ChatItemPage() {
+export default async function ChatItemPage() {
   return (
     <>
       <ChatCom />
