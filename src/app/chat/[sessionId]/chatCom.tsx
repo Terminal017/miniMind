@@ -1,12 +1,16 @@
 import { useGLModelLoading } from '@/store/ai-store'
-import { LoadGLModelProgress } from './progress'
+import { LoadGLModelProgress } from '../progress'
 import { useModelLoading } from '@/hooks/use-modelProgress'
 import { useState, useEffect, useRef } from 'react'
 import { useWorkerManager } from '@/store/ai-store'
+import { useParams } from 'next/navigation'
 import * as Comlink from 'comlink'
 import { toast } from 'sonner'
 
 export default function ChatCom() {
+  const { id } = useParams()
+  console.log('当前会话ID:', id)
+
   //初始化模型下载Worker
   const modelWorker = useWorkerManager((state) => state.modelWorker)
   const initmodelWorker = useWorkerManager((state) => state.initModelWorker)

@@ -44,11 +44,31 @@ type ChunkType = {
   // metadata: object //额外信息，预留属性
 }
 
+//会话类型定义
+type SessionType = {
+  id: number
+  title: string
+  libraryId: number | null //关联的唯一知识库ID
+  createdAt: Date
+  updatedAt: Date
+}
+
+type MessageType = {
+  id: number
+  sessionId: string //管理会话外键
+  sender: 'user' | 'model'
+  content: string
+  sources?: number[] //相关文档ID列表
+  createdAt: Date
+}
+
 //创建Dexie数据库实例
 const db = new Dexie('MinimindDB') as Dexie & {
   libraries: EntityTable<LibraryType, 'id'>
   documents: EntityTable<DocsType, 'id'>
   chunks: EntityTable<ChunkType, 'id'>
+  sessions: EntityTable<SessionType, 'id'>
+  messages: EntityTable<MessageType, 'id'>
 }
 
 //定义主键和索引
@@ -56,6 +76,8 @@ db.version(1).stores({
   libraries: '++id, name, status',
   documents: '++id, libraryId, name, status, enabled',
   chunks: '++id, docId, libraryId',
+  sessions: '++id, title, libraryId',
+  messages: '++id, sessionId, sender, createdAt',
 })
 
 export default db

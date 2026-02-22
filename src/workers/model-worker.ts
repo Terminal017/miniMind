@@ -36,11 +36,12 @@ const api: ModelWorkerAPI = {
         //@ts-ignore
         GLModel = await pipeline(
           'text-generation',
-          'onnx-community/Qwen2.5-1.5B-Instruct-ONNX',
+          'onnx-community/Qwen2.5-0.5B-Instruct', //0.5B模型
+          //更优质的选择，需要更高的配置：onnx-community/Qwen2.5-1.5B-Instruct
           {
             // 指定使用 WebGPU 加速。
             device: 'webgpu',
-            dtype: 'q4',
+            dtype: 'q4', //量化，每个参数 4bit，1B约500MB
 
             // 进度回调：Transformers.js 会密集地触发这个回调，报告下载进度
             // progressData 格式: { status: 'downloading', name: 'model.onnx', progress: 54.3 }
@@ -57,7 +58,7 @@ const api: ModelWorkerAPI = {
         // 降级方案：如果用户的浏览器不支持 WebGPU，回退到 WASM
         GLModel = await pipeline(
           'text-generation',
-          'onnx-community/Qwen2.5-1.5B-Instruct-ONNX',
+          'onnx-community/Qwen2.5-0.5B-Instruct',
           {
             device: 'wasm',
             dtype: 'q4',
