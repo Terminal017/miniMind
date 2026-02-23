@@ -81,6 +81,10 @@ export function AppSidebar() {
                       onClick={(e) => {
                         e.stopPropagation() //防止跳转
                         deleteSession(session.id)
+                        // 如果删除的是当前会话,跳转到/chat
+                        if (session.id === id) {
+                          router.push('/chat')
+                        }
                       }}
                     >
                       删除

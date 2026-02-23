@@ -13,7 +13,9 @@ import {
 env.allowLocalModels = false
 //允许使用Cache Storage
 env.useBrowserCache = true
-env.remoteHost = 'https://huggingface.co'
+// env.remoteHost = 'https://huggingface.co'
+env.remoteHost = 'https://hf-mirror.com' //镜像网站
+
 //定义生成式语言模型
 let GLModel: TextGenerationPipeline | null = null
 //Promise锁
@@ -38,6 +40,7 @@ const api: ModelWorkerAPI = {
         GLModel = await pipeline(
           'text-generation',
           'onnx-community/Qwen2.5-0.5B-Instruct', //0.5B模型
+          // 'onnx-community/LFM2-700M-ONNX',
           //更优质的选择，需要更高的配置：onnx-community/Qwen2.5-1.5B-Instruct
           {
             // 指定使用 WebGPU 加速。
@@ -47,7 +50,11 @@ const api: ModelWorkerAPI = {
             // 进度回调：Transformers.js 会密集地触发这个回调，报告下载进度
             // progressData 格式: { status: 'downloading', name: 'model.onnx', progress: 54.3 }
             progress_callback: (progressData: any) => {
-              onProgress({ progress: progressData.progress || 0 })
+              //下载阶段更新进度，如果是读取缓存则不更新
+
+              if (progressData.status === 'progress') {
+                onProgress({ progress: progressData.progress || 0 })
+              }
             },
           },
         )
@@ -59,6 +66,7 @@ const api: ModelWorkerAPI = {
         // 降级方案：如果用户的浏览器不支持 WebGPU，回退到 WASM
         GLModel = await pipeline(
           'text-generation',
+          // 'onnx-community/LFM2-700M-ONNX',
           'onnx-community/Qwen2.5-0.5B-Instruct',
           {
             device: 'wasm',

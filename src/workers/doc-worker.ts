@@ -34,7 +34,7 @@ env.allowLocalModels = false
 env.useBrowserCache = true
 
 //国内镜像源
-// env.remoteHost = 'https://hf-mirror.com';
+env.remoteHost = 'https://hf-mirror.com'
 
 //模型变量
 let embeddingModel: FeatureExtractionPipeline | null = null

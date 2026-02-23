@@ -1,6 +1,7 @@
 //知识库CRUD（函数调用而非API请求）
 
 import db from '@/lib/db'
+import { deleteDocumentInf, getAllDocuments } from './documentService'
 
 //创建新知识库
 export async function createLibrary(name: string) {
@@ -30,6 +31,17 @@ export async function getAllLibraries() {
 //删除单个知识库
 export async function deleteLibrary(libraryId: number) {
   try {
+    //删除库内所有文档和chunks
+    const documents = await getAllDocuments(libraryId)
+    for (const doc of documents) {
+      const res = await deleteDocumentInf(doc.id)
+      if (!res.success) {
+        console.error(`删除文档 ${doc.id} 失败`)
+        return { success: false }
+      }
+    }
+
+    //上述文件删除成功后删除知识库
     await db.libraries.delete(libraryId)
     return { success: true }
   } catch (error) {
