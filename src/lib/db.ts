@@ -55,7 +55,7 @@ type SessionType = {
 
 type MessageType = {
   id: number
-  sessionId: string //管理会话外键
+  sessionId: number //管理会话外键
   sender: 'user' | 'model'
   content: string
   sources?: number[] //相关文档ID列表

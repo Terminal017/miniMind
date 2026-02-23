@@ -1,6 +1,7 @@
 //会话CRUD
 
 import db from '@/lib/db'
+import { clearMessages } from './messageService'
 
 //创建新会话
 export async function createSession() {
@@ -14,15 +15,22 @@ export async function createSession() {
   return { ...new_session, id } //返回session对象
 }
 
-//获取会话
+//获取所有会话
 export async function getSessions() {
   const sessions = await db.sessions.toArray()
   return sessions
 }
 
+//获取单个会话
+export async function getSessionItem(sessionId: number) {
+  const session = await db.sessions.get(sessionId)
+  return session || null
+}
+
 //删除会话（用户操作提供错误处理提示）
 export async function deleteSession(sessionId: number) {
   try {
+    await clearMessages(sessionId) //先删除会话相关消息
     await db.sessions.delete(sessionId)
     return { success: true }
   } catch (error) {

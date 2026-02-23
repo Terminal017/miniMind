@@ -9,10 +9,8 @@ import { useRouter, useParams } from 'next/navigation'
 import * as Comlink from 'comlink'
 import { toast } from 'sonner'
 import { checkSession } from '@/services/sessionService'
-import { Textarea } from '@/components/ui/textarea'
-import { Button } from '@/components/ui/button'
-import { CircleArrowUp } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import MessageCom from './messageCom'
+import InputCom from './inputCom'
 
 export default function ChatCom() {
   const { sessionId } = useParams()
@@ -75,46 +73,11 @@ export default function ChatCom() {
     }
   }, [modelWorker, sessionExists])
 
-  //问题状态（textarea受控输入）
-  const [question, setQuestion] = useState('')
-
   return (
     <>
       <div className="w-full flex-1 flex flex-col">
-        <div className="flex-1 overflow-y-auto"></div>
-        <div className="w-3/5 mx-auto mb-8">
-          <div
-            className="flex flex-row items-center border shadow-sm
-          rounded-md p-1"
-          >
-            <textarea
-              className="w-full resize-none overflow-hidden
-               px-3 py-2 focus:outline-none"
-              rows={1}
-              value={question}
-              onChange={(e) => {
-                setQuestion(e.target.value)
-                const t = e.currentTarget as HTMLTextAreaElement
-                t.style.height = 'auto'
-                t.style.height = `${t.scrollHeight}px`
-              }}
-              // onKeyDown={(e) => {
-              //   // Enter 提交 (不按 Shift)
-              //   if (e.key === 'Enter' && !e.shiftKey) {
-              //     e.preventDefault()
-              //     if (question.trim()) {
-              //       sendQuestion(question)
-              //       e.currentTarget.style.height = 'auto'
-              //     }
-              //   }
-              // }}
-              required
-            ></textarea>
-            <Button variant="ghost" size="icon" className="self-end mr-1">
-              <CircleArrowUp className="w-6! h-6! text-muted-foreground hover:text-primary" />
-            </Button>
-          </div>
-        </div>
+        <MessageCom sessionId={Number(sessionId)} />
+        <InputCom />
       </div>
     </>
   )
