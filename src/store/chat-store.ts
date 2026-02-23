@@ -20,6 +20,10 @@ type ChatStateType = {
   finishStreaming: (sessionId: number) => void
 }
 
+// RAF 节流变量（模块级别）
+let buffer = ''
+let rafId: number | null = null
+
 const useChatStore = create<ChatStateType>((set, get) => ({
   currentSessionId: null, //当前会话ID
   currentLibraryId: null, //当前会话关联的知识库ID
@@ -63,6 +67,13 @@ const useChatStore = create<ChatStateType>((set, get) => ({
 
   //初始化流式输出
   initStreaming: () => {
+    // 重置 RAF 状态
+    buffer = ''
+    if (rafId) {
+      cancelAnimationFrame(rafId)
+    }
+    rafId = null
+
     //添加一个占位信息
     const placeholderMsg: MessageType = {
       role: 'model',
@@ -76,14 +87,36 @@ const useChatStore = create<ChatStateType>((set, get) => ({
   },
   //同步消息状态
   appendChunk: (chunk) => {
-    set((state) => {
-      const newMessages = [...state.messageList]
-      const lastMsg = newMessages[newMessages.length - 1]
-      if (lastMsg && lastMsg.role === 'model') {
-        lastMsg.content += chunk
-      }
-      return { messageList: newMessages }
-    })
+    buffer += chunk
+
+    if (!rafId) {
+      rafId = requestAnimationFrame(() => {
+        set((state) => {
+          const messages = state.messageList
+          const lastMsg = messages[messages.length - 1]
+
+          if (lastMsg?.role === 'model') {
+            return {
+              messageList: [
+                ...messages.slice(0, -1),
+                { ...lastMsg, content: lastMsg.content + buffer },
+              ],
+            }
+          }
+          return state
+        })
+        buffer = ''
+        rafId = null
+      })
+    }
+    // set((state) => {
+    //   const newMessages = [...state.messageList]
+    //   const lastMsg = newMessages[newMessages.length - 1]
+    //   if (lastMsg && lastMsg.role === 'model') {
+    //     lastMsg.content += chunk
+    //   }
+    //   return { messageList: newMessages }
+    // })
   },
   //结束流式传输
   finishStreaming: async (sessionId: number) => {
@@ -91,6 +124,28 @@ const useChatStore = create<ChatStateType>((set, get) => ({
     if (!isStreaming) {
       return
     }
+
+    // 刷新剩余 buffer
+    if (rafId) {
+      cancelAnimationFrame(rafId)
+    }
+    if (buffer) {
+      set((state) => {
+        const messages = state.messageList
+        const lastMsg = messages[messages.length - 1]
+        if (lastMsg?.role === 'model') {
+          return {
+            messageList: [
+              ...messages.slice(0, -1),
+              { ...lastMsg, content: lastMsg.content + buffer },
+            ],
+          }
+        }
+        return state
+      })
+      buffer = ''
+    }
+
     const lastMsg = messageList[messageList.length - 1]
     //写入数据库
     await createMessage({
