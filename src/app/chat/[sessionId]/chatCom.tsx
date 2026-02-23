@@ -75,7 +75,7 @@ export default function ChatCom() {
 
   return (
     <>
-      <div className="w-full flex-1 flex flex-col">
+      <div className="w-full flex flex-col overflow-hidden flex-1 max-h-[calc(100vh-92px)]">
         <MessageCom sessionId={Number(sessionId)} />
         <InputCom />
       </div>

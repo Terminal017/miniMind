@@ -50,7 +50,7 @@ export default function InputCom() {
   }
 
   return (
-    <div className="w-3/5 mx-auto mb-8">
+    <div className="w-3/5 mx-auto my-8">
       <div
         className="flex flex-row items-center border shadow-sm
           rounded-md p-1"
