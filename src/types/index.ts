@@ -2,6 +2,10 @@ export interface ModelWorkerAPI {
   loadGLModel: (
     onProgress: (data: { progress: number }) => void,
   ) => Promise<void>
+  generateStreaming: (
+    prompt: string,
+    onToken: (token: string) => void,
+  ) => Promise<void>
 }
 
 export interface DocWorkerAPI {

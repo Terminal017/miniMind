@@ -2,16 +2,32 @@ import { Button } from '@/components/ui/button'
 import { CircleArrowUp } from 'lucide-react'
 import { useChatStore } from '@/store/chat-store'
 import { useState } from 'react'
+import { useWorkerManager } from '@/store/ai-store'
+import { toast } from 'sonner'
+import * as Comlink from 'comlink'
+import { useParams } from 'next/navigation'
 
 export default function InputCom() {
+  const { sessionId } = useParams()
+
   //问题状态（textarea受控输入）
   const [question, setQuestion] = useState('')
   const isStreaming = useChatStore((state) => state.isStreaming)
   const addMessage = useChatStore((state) => state.addMessage)
+  const initStreaming = useChatStore((state) => state.initStreaming)
+  const appendChunk = useChatStore((state) => state.appendChunk)
+  const finishStreaming = useChatStore((state) => state.finishStreaming)
+
+  //获取worker实例
+  const modelWorker = useWorkerManager((state) => state.modelWorker)
 
   //提交问题处理函数
-  function handleQuestionSubmit(question_msg: string) {
+  async function handleQuestionSubmit(question_msg: string) {
     if (isStreaming) {
+      return
+    }
+    if (!modelWorker) {
+      toast.info('worker未初始化，请重试')
       return
     }
     addMessage({
@@ -20,6 +36,17 @@ export default function InputCom() {
       createAt: new Date(),
     })
     setQuestion('')
+
+    const prompt = question_msg
+    initStreaming()
+    await modelWorker.api.generateStreaming(
+      prompt,
+      Comlink.proxy((token: string) => {
+        // 【高频触发区】Zustand 接收字符，仅更新内存
+        appendChunk(token)
+      }),
+    )
+    finishStreaming(Number(sessionId))
   }
 
   return (

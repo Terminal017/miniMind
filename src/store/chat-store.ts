@@ -14,12 +14,13 @@ type ChatStateType = {
   messageList: MessageType[]
   isStreaming: boolean
   setCurrentSession: (sessionId: number) => void
-  setMessageList: (messages: MessageType[]) => void
+  appendChunk: (chunk: string) => void
   addMessage: (message: MessageType) => void
-  setStreaming: (streaming: boolean) => void
+  initStreaming: () => void
+  finishStreaming: (sessionId: number) => void
 }
 
-const useChatStore = create<ChatStateType>((set) => ({
+const useChatStore = create<ChatStateType>((set, get) => ({
   currentSessionId: null, //当前会话ID
   currentLibraryId: null, //当前会话关联的知识库ID
   messageList: [], //当前会话的消息列表
@@ -60,9 +61,45 @@ const useChatStore = create<ChatStateType>((set) => ({
     })
   },
 
+  //初始化流式输出
+  initStreaming: () => {
+    //添加一个占位信息
+    const placeholderMsg: MessageType = {
+      role: 'model',
+      content: '',
+      createAt: new Date(),
+    }
+    set((state) => ({
+      messageList: [...state.messageList, placeholderMsg],
+      isStreaming: true,
+    }))
+  },
   //同步消息状态
-  setMessageList: (messages) => set({ messageList: messages }),
-  setStreaming: (streaming) => set({ isStreaming: streaming }),
+  appendChunk: (chunk) => {
+    set((state) => {
+      const newMessages = [...state.messageList]
+      const lastMsg = newMessages[newMessages.length - 1]
+      if (lastMsg && lastMsg.role === 'model') {
+        lastMsg.content += chunk
+      }
+      return { messageList: newMessages }
+    })
+  },
+  //结束流式传输
+  finishStreaming: async (sessionId: number) => {
+    const { messageList, isStreaming } = get()
+    if (!isStreaming) {
+      return
+    }
+    const lastMsg = messageList[messageList.length - 1]
+    //写入数据库
+    await createMessage({
+      sessionId: sessionId,
+      sender: 'model',
+      content: lastMsg.content,
+    })
+    set({ isStreaming: false })
+  },
 }))
 
 export { useChatStore }

@@ -6,6 +6,7 @@ import {
   pipeline,
   env,
   TextGenerationPipeline,
+  TextStreamer,
 } from '@huggingface/transformers'
 
 //允许加载本地模型
@@ -73,6 +74,30 @@ const api: ModelWorkerAPI = {
       }
     })()
     return GLModelLock
+  },
+
+  async generateStreaming(prompt: string, onToken: (token: string) => void) {
+    if (!GLModel) {
+      throw new Error('模型尚未初始化')
+    }
+
+    //配置流式输出处理器
+    const streamer = new TextStreamer(GLModel.tokenizer, {
+      skip_prompt: true, // 配置：只输出 AI 生成的回答
+      callback_function: (text: string) => {
+        // 每当模型生成一个新词，触发回调函数
+        onToken(text)
+      },
+    })
+
+    await GLModel(prompt, {
+      max_new_tokens: 512, // 控制最大生成长度
+      temperature: 0.6, // 控制回答的创造性
+      repetition_penalty: 1.1, // 防止模型复读
+      streamer: streamer, // 挂载流式处理器
+    })
+
+    return
   },
 }
 
