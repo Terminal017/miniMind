@@ -10,7 +10,7 @@ export default function ChatPageLayout({
     <SidebarProvider className="min-h-[calc(100vh-56px)]">
       <AppSidebar />
       {/*主区域内容，即SideBar右侧区域*/}
-      <section className="flex-1 overflow-hidden">
+      <section className="flex-1 overflow-hidden flex flex-col">
         <SidebarTrigger />
         {children}
       </section>
