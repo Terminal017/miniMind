@@ -38,6 +38,9 @@ env.useBrowserCache = true
 env.remoteHost = 'https://model.startrails.site/' //从R2中下载模型
 env.remotePathTemplate = '{model}/'
 
+//让浏览器从本地下载依赖文件而非从CDN
+env.backends.onnx.wasm!.wasmPaths = '/wasm/'
+
 //模型变量
 let embeddingModel: FeatureExtractionPipeline | null = null
 //Promise锁，避免模型下载过程中触发新的下载，并且允许等待完成后进行后续请求

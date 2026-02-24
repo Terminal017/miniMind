@@ -114,12 +114,8 @@ export function CleanModel() {
   // 检查模型是否存在
   useEffect(() => {
     async function checkModels() {
-      const chatExists = await checkModelInCache(
-        'onnx-community/Qwen2.5-0.5B-Instruct',
-      )
-      const embeddingExists = await checkModelInCache(
-        'Xenova/bge-small-zh-v1.5',
-      )
+      const chatExists = await checkModelInCache('LFM2-700M-ONNX')
+      const embeddingExists = await checkModelInCache('bge-small-zh-v1.5')
       setChatModelExists(chatExists)
       setEmbeddingModelExists(embeddingExists)
     }
@@ -128,8 +124,8 @@ export function CleanModel() {
 
   //处理删除所有模型
   async function handleDeleteAllModels() {
-    await deleteModelFromCache('onnx-community/Qwen2.5-0.5B-Instruct')
-    await deleteModelFromCache('Xenova/bge-small-zh-v1.5')
+    await deleteModelFromCache('LFM2-700M-ONNX')
+    await deleteModelFromCache('bge-small-zh-v1.5')
     setChatModelExists(false)
     setEmbeddingModelExists(false)
   }
@@ -173,9 +169,7 @@ export function CleanModel() {
               <span className="text-sm font-medium text-muted-foreground">
                 对话模型
               </span>
-              <span className="text-lg font-semibold">
-                Qwen2.5-0.5B-Instruct
-              </span>
+              <span className="text-lg font-semibold">LFM2-700M-ONNX</span>
               <div className="flex items-center gap-2">
                 <div
                   className={`h-2 w-2 rounded-full ${

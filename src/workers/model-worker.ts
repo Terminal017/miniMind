@@ -18,6 +18,12 @@ env.useBrowserCache = true
 env.remoteHost = 'https://model.startrails.site/' //从R2中下载模型
 env.remotePathTemplate = '{model}/'
 
+//让浏览器从本地下载依赖文件而非从CDN
+console.log('设置ONNX WASM路径为 /wasm/', env.backends.onnx)
+const newpath = new URL('/wasm/', self.location.origin).toString()
+console.log('新ONNX WASM路径:', newpath)
+env.backends.onnx.wasm!.wasmPaths = newpath
+
 //定义生成式语言模型
 let GLModel: TextGenerationPipeline | null = null
 //Promise锁
