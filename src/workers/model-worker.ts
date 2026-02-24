@@ -13,8 +13,10 @@ import {
 env.allowLocalModels = false
 //允许使用Cache Storage
 env.useBrowserCache = true
-// env.remoteHost = 'https://huggingface.co'
-env.remoteHost = 'https://hf-mirror.com' //镜像网站
+
+// env.remoteHost = 'https://hf-mirror.com' //镜像网站
+env.remoteHost = 'https://model.startrails.site/' //从R2中下载模型
+env.remotePathTemplate = '{model}/'
 
 //定义生成式语言模型
 let GLModel: TextGenerationPipeline | null = null
@@ -39,9 +41,9 @@ const api: ModelWorkerAPI = {
         //@ts-ignore
         GLModel = await pipeline(
           'text-generation',
-          'onnx-community/Qwen2.5-0.5B-Instruct', //0.5B模型
-          // 'onnx-community/LFM2-700M-ONNX',
-          //更优质的选择，需要更高的配置：onnx-community/Qwen2.5-1.5B-Instruct
+          // 'onnx-community/Qwen2.5-0.5B-Instruct', //0.5B模型
+          // 'onnx-community/LFM2-700M-ONNX', //更倾向于续写的模型，效果更好
+          'LFM2-700M-ONNX',
           {
             // 指定使用 WebGPU 加速。
             device: 'webgpu',
@@ -67,7 +69,8 @@ const api: ModelWorkerAPI = {
         GLModel = await pipeline(
           'text-generation',
           // 'onnx-community/LFM2-700M-ONNX',
-          'onnx-community/Qwen2.5-0.5B-Instruct',
+          // 'onnx-community/Qwen2.5-0.5B-Instruct',
+          'LFM2-700M-ONNX',
           {
             device: 'wasm',
             dtype: 'q4',
@@ -100,8 +103,12 @@ const api: ModelWorkerAPI = {
 
     await GLModel(prompt, {
       max_new_tokens: 512, // 控制最大生成长度
-      temperature: 0.6, // 控制回答的创造性
-      repetition_penalty: 1.1, // 防止模型复读
+      temperature: 0.7, // 控制回答的创造性
+      top_k: 50, // 限制采样候选数，减少噪音
+      top_p: 0.9, // nucleus sampling，控制采样范围
+      do_sample: true, // 启用采样
+      repetition_penalty: 1.2, // 防止模型复读
+      no_repeat_ngram_size: 3,
       streamer: streamer, // 挂载流式处理器
     })
 

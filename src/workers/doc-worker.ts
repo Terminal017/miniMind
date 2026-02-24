@@ -34,7 +34,9 @@ env.allowLocalModels = false
 env.useBrowserCache = true
 
 //国内镜像源
-env.remoteHost = 'https://hf-mirror.com'
+// env.remoteHost = 'https://hf-mirror.com'
+env.remoteHost = 'https://model.startrails.site/' //从R2中下载模型
+env.remotePathTemplate = '{model}/'
 
 //模型变量
 let embeddingModel: FeatureExtractionPipeline | null = null
@@ -223,7 +225,8 @@ const api: DocWorkerAPI = {
         //@ts-ignore
         embeddingModel = (await pipeline(
           'feature-extraction',
-          'Xenova/bge-small-zh-v1.5',
+          // 'Xenova/bge-small-zh-v1.5',
+          'bge-small-zh-v1.5',
           {
             // 指定使用 WebGPU 加速。
             device: 'webgpu',
@@ -244,7 +247,8 @@ const api: DocWorkerAPI = {
         // 降级方案：如果用户的浏览器不支持 WebGPU，回退到 WASM
         embeddingModel = await pipeline(
           'feature-extraction',
-          'Xenova/bge-small-zh-v1.5',
+          // 'Xenova/bge-small-zh-v1.5',
+          'bge-small-zh-v1.5',
           {
             device: 'wasm',
             dtype: 'fp16',
