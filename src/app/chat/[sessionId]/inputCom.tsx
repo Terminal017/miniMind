@@ -52,7 +52,7 @@ export default function InputCom() {
       chunks = await docWorker.api.searchSimilarChunks(
         question_msg,
         Number(libraryId),
-        3,
+        2,
         Comnlink.proxy(() => {}),
       )
     }
@@ -71,15 +71,14 @@ export default function InputCom() {
           你是一个基于文档回答问题的助手。
           规则：
           1. 仅根据提供的【参考资料】回答。
-          2. 如果资料内容不足以回答，请直接说“资料中未提及”。
+          2. 如果问题与资料内容无关，请直接说“资料中未提及”。
           3. 保持回答简洁、严谨。<|im_end|>
           <|im_start|>user
           【参考资料】：
           1. ${chunks[0]}
           2. ${chunks[1]}
-          3. ${chunks[2]}
 
-          【我的问题】：
+          【用户的问题】：
           ${question_msg}<|im_end|>
           <|im_start|>assistant
           `

@@ -28,6 +28,11 @@ export async function getAllLibraries() {
   return libraries
 }
 
+export async function getLibraryItem(libraryId: number) {
+  const library = await db.libraries.get(libraryId)
+  return library || null
+}
+
 //删除单个知识库
 export async function deleteLibrary(libraryId: number) {
   try {

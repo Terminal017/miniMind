@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
 } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
-import { createSession } from '@/services/sessionService'
+import { createSession, updateSession } from '@/services/sessionService'
 import { useRouter, useParams } from 'next/navigation'
 import { SquarePen } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
@@ -22,9 +22,21 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
-
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Field, FieldGroup } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { MoreHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useState } from 'react'
 
 export function AppSidebar() {
   const { sessionId } = useParams()
@@ -38,6 +50,7 @@ export function AppSidebar() {
   }
 
   const sessions = useLiveQuery(() => getSessions() ?? [], []) ?? []
+  const [renamingId, setRenamingId] = useState<number | null>(null)
 
   return (
     <Sidebar>
@@ -65,6 +78,47 @@ export function AppSidebar() {
                 >
                   <span className="truncate">{session.title}</span>
                 </SidebarMenuButton>
+                <Dialog
+                  open={renamingId === session.id}
+                  onOpenChange={(open) => {
+                    if (!open) setRenamingId(null)
+                  }}
+                >
+                  <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                      <DialogTitle>新建知识库</DialogTitle>
+                    </DialogHeader>
+                    <FieldGroup>
+                      <Field>
+                        <Label htmlFor="title-1">新名称</Label>
+                        <Input
+                          id="title-1"
+                          name="title"
+                          form="add-libtitle"
+                          required
+                        />
+                      </Field>
+                    </FieldGroup>
+                    {/* 用于重命名的组件 */}
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="outline">取消</Button>
+                      </DialogClose>
+                      <form
+                        id="add-libtitle"
+                        action={(formData) => {
+                          updateSession(session.id, {
+                            title:
+                              (formData.get('title') as string) || '新会话',
+                          })
+                          setRenamingId(null)
+                        }}
+                      >
+                        <Button type="submit">确认</Button>
+                      </form>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -76,6 +130,15 @@ export function AppSidebar() {
                   </DropdownMenuTrigger>
 
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setRenamingId(session.id)
+                      }}
+                    >
+                      重命名
+                    </DropdownMenuItem>
+
                     <DropdownMenuItem
                       className="text-destructive"
                       onClick={(e) => {

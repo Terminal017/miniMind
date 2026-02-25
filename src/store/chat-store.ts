@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { getMessageList, createMessage } from '@/services/messageService'
 import { getSessionItem, updateSession } from '@/services/sessionService'
+import { getLibraryItem } from '@/services/libraryService'
 
 type MessageType = {
   role: 'user' | 'model'
@@ -61,7 +62,10 @@ const useChatStore = create<ChatStateType>((set, get) => ({
       return
     }
     set({ currentLibraryId: libraryId })
+    //更新title为知识库名称
+    const lib = (await getLibraryItem(Number(libraryId))) || { name: '新会话' }
     await updateSession(session, {
+      title: libraryId === 'none' ? '新会话' : `知识库${lib.name}问答`,
       libraryId: libraryId === 'none' ? null : Number(libraryId),
     })
   },
@@ -164,7 +168,7 @@ const useChatStore = create<ChatStateType>((set, get) => ({
 
   //结束流式传输
   finishStreaming: async (sessionId: number) => {
-    const { messageList, isStreaming } = get()
+    const { isStreaming } = get()
     if (!isStreaming) {
       return
     }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useChatStore } from '@/store/chat-store'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm' //用于适配表格等markdown样式
 import { Bot } from 'lucide-react'
@@ -11,9 +11,18 @@ export default function MessageCom({ sessionId }: { sessionId: number }) {
   const setCurrentSession = useChatStore((state) => state.setCurrentSession)
   const isStreaming = useChatStore((state) => state.isStreaming)
 
+  const messageEndRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     setCurrentSession(sessionId)
   }, [])
+
+  // 监听 messageList 的变化并滚动到底部
+  useEffect(() => {
+    if (messageEndRef.current) {
+      messageEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messageList])
 
   return (
     <>
@@ -71,6 +80,8 @@ export default function MessageCom({ sessionId }: { sessionId: number }) {
             )
           }
         })}
+        {/* 滚动视角的锚点 */}
+        <div ref={messageEndRef} />
       </div>
     </>
   )
