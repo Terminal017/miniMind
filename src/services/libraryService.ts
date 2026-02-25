@@ -14,7 +14,7 @@ export async function createLibrary(name: string) {
     status: 'empty' as const,
   }
   try {
-    const new_id = await db.libraries.add(new_library)
+    await db.libraries.add(new_library)
     return { success: true }
   } catch (error) {
     console.error('创建知识库失败:', error)

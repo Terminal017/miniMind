@@ -88,7 +88,7 @@ const useWorkerManager = create<WorkerManagerState>((set, get) => ({
   initModelWorker: () => {
     console.log('初始化 Model Worker...')
     if (get().modelWorker) return
-    console.log('Web Worker初始化成功（Zustand）')
+    console.log('Model Worker初始化成功（Zustand）')
     const worker = new Worker('/model-worker-bundle.js', { type: 'module' })
     const api = wrap<ModelWorkerAPI>(worker)
     set({ modelWorker: { worker, api } })
@@ -96,8 +96,8 @@ const useWorkerManager = create<WorkerManagerState>((set, get) => ({
 
   initDocWorker: () => {
     console.log('初始化 Doc Worker...')
-    if (get().modelWorker) return
-    console.log('Web Worker初始化成功（Zustand）')
+    if (get().docWorker) return
+    console.log('DOC Worker初始化成功（Zustand）')
     const worker = new Worker('/doc-worker-bundle.js', { type: 'module' })
     const api = wrap<DocWorkerAPI>(worker)
     set({ docWorker: { worker, api } })

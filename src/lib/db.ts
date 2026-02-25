@@ -81,4 +81,4 @@ db.version(1).stores({
 })
 
 export default db
-export type { LibraryType, DocsType, ChunkType }
+export type { LibraryType, DocsType, ChunkType, SessionType, MessageType }

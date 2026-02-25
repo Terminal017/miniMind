@@ -1,7 +1,9 @@
+'use client'
+
 import { Button } from '@/components/ui/button'
 import { CircleArrowUp } from 'lucide-react'
 import { useChatStore } from '@/store/chat-store'
-import { use, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { useWorkerManager } from '@/store/ai-store'
 import { toast } from 'sonner'
 import * as Comlink from 'comlink'
@@ -17,6 +19,7 @@ import {
 } from '@/components/ui/select'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { getAllLibraries } from '@/services/libraryService'
+import * as Comnlink from 'comlink'
 
 export default function InputCom() {
   const { sessionId } = useParams()
@@ -31,16 +34,30 @@ export default function InputCom() {
 
   //获取worker实例
   const modelWorker = useWorkerManager((state) => state.modelWorker)
+  const docWorker = useWorkerManager((state) => state.docWorker)
 
   //提交问题处理函数
-  async function handleQuestionSubmit(question_msg: string) {
+  async function handleQuestionSubmit(question_msg: string, libraryId: string) {
+    //检查状态
     if (isStreaming) {
       return
     }
-    if (!modelWorker) {
-      toast.info('worker未初始化，请重试')
+    if (!modelWorker || !docWorker) {
+      toast.info('worker初始化错误，请重试')
       return
     }
+
+    let chunks: string[] = []
+    if (libraryId !== 'none') {
+      chunks = await docWorker.api.searchSimilarChunks(
+        question_msg,
+        Number(libraryId),
+        3,
+        Comnlink.proxy(() => {}),
+      )
+    }
+
+    //提交用户输入
     addMessage({
       role: 'user',
       content: question_msg,
@@ -48,8 +65,30 @@ export default function InputCom() {
     })
     setQuestion('')
 
-    const prompt = question_msg
+    const prompt =
+      chunks.length > 0
+        ? `<|im_start|>system
+    你是一个严谨的百科助手。请仅根据提供的【参考资料】简洁回答问题。如果资料中没提到，请说资料中未提及。<|im_end|>
+    <|im_start|>user
+    【参考资料】
+    1. ${chunks[0]}
+    2. ${chunks[1]}
+    3. ${chunks[2]}
+    
+    【用户提问】
+    ${question_msg}
+    
+    请结合上述资料给出简洁的回答：<|im_end|>
+    <|im_start|>assistant
+    `
+        : `<|im_start|>system
+        你是一个友好、诚实且博学的 AI 助手。请直接回答用户的问题，字数限制为100。<|im_end|>
+        <|im_start|>user
+        ${question_msg}<|im_end|>
+        <|im_start|>assistant
+        `
 
+    console.log('提示词', prompt)
     //闭包传递sessionId
     initStreaming(Number(sessionId))
     await modelWorker.api.generateStreaming(
@@ -107,7 +146,7 @@ export default function InputCom() {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault()
               if (question.trim()) {
-                handleQuestionSubmit(question)
+                handleQuestionSubmit(question, currentLibraryId)
                 e.currentTarget.style.height = 'auto'
               }
             }
@@ -119,7 +158,7 @@ export default function InputCom() {
           size="icon"
           className="self-end mr-1"
           disabled={!question.trim() && !isStreaming}
-          onClick={() => handleQuestionSubmit(question)}
+          onClick={() => handleQuestionSubmit(question, currentLibraryId)}
         >
           <CircleArrowUp className="w-6! h-6! text-muted-foreground hover:text-primary" />
         </Button>

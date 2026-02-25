@@ -14,8 +14,32 @@ import {
   FeatureExtractionPipeline,
 } from '@huggingface/transformers'
 import { addAllChunks, deleteDocChunks } from '@/services/chunkService'
-import db from '@/lib/db'
 import { cosineSimilarity } from '@/lib/calculate'
+import Dexie, { type EntityTable } from 'dexie'
+import {
+  LibraryType,
+  DocsType,
+  ChunkType,
+  SessionType,
+  MessageType,
+} from '@/lib/db'
+
+//创建Dexie数据库实例
+const db = new Dexie('MinimindDB') as Dexie & {
+  libraries: EntityTable<LibraryType, 'id'>
+  documents: EntityTable<DocsType, 'id'>
+  chunks: EntityTable<ChunkType, 'id'>
+  sessions: EntityTable<SessionType, 'id'>
+  messages: EntityTable<MessageType, 'id'>
+}
+//定义主键和索引
+db.version(1).stores({
+  libraries: '++id, name, status',
+  documents: '++id, libraryId, name, status, enabled',
+  chunks: '++id, docId, libraryId',
+  sessions: '++id, title, libraryId',
+  messages: '++id, sessionId, sender, createdAt',
+})
 
 // 设置 PDF.js 的 Worker 线程（它会新开一个Worker来处理PDF解析，这个库只能用它自己定义的Worker或当前线程）
 //调用pdfjs.getDocument会自动通过这个配置创建新worker
@@ -294,9 +318,9 @@ const api: DocWorkerAPI = {
     return vectors
   },
 
-  //处理用户问题检索
+  // 处理用户问题检索
   async searchSimilarChunks(question, libraryId, topK, onProgress) {
-    //获取知识库所有切片
+    // 获取知识库所有切片
     const allChunks = await db.chunks
       .where('libraryId')
       .equals(libraryId)
@@ -308,7 +332,13 @@ const api: DocWorkerAPI = {
 
     //加载模型
     if (!embeddingModel) {
+      console.log('doc-worker: 向量模型未加载，开始加载...')
       await this.loadEmbedModel(onProgress)
+    }
+
+    if (!embeddingModel) {
+      console.log('doc-worker: 向量模型加载失败')
+      throw new Error('向量化模型加载失败')
     }
 
     //获取问题的向量
@@ -320,7 +350,7 @@ const api: DocWorkerAPI = {
       // 根据余弦相似度获取分数
       const score = cosineSimilarity(questionVec, chunk.embedding)
       return {
-        tex: chunk.content,
+        text: chunk.content,
         score: score,
       }
     })
@@ -333,7 +363,7 @@ const api: DocWorkerAPI = {
     return scoredChunks
       .filter((item) => item.score > 0.4)
       .slice(0, topK)
-      .map((item) => item.tex)
+      .map((item) => item.text)
   },
 }
 

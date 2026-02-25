@@ -1,3 +1,5 @@
+'use client'
+
 import { useChatStore } from '@/store/chat-store'
 import { useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'

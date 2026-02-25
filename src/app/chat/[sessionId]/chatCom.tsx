@@ -10,7 +10,13 @@ import * as Comlink from 'comlink'
 import { toast } from 'sonner'
 import { checkSession } from '@/services/sessionService'
 import MessageCom from './messageCom'
-import InputCom from './inputCom'
+import dynamic from 'next/dynamic'
+
+//动态导入，解决Select组件在服务端渲染时的兼容性问题
+const InputCom = dynamic(() => import('./inputCom'), {
+  ssr: false,
+})
+// import InputCom from './inputCom'
 
 export default function ChatCom() {
   const { sessionId } = useParams()
@@ -41,8 +47,8 @@ export default function ChatCom() {
   //初始化模型下载与向量化Worker
   const modelWorker = useWorkerManager((state) => state.modelWorker)
   const docWorker = useWorkerManager((state) => state.docWorker)
-  const initdocWorker = useWorkerManager((state) => state.initDocWorker)
   const initmodelWorker = useWorkerManager((state) => state.initModelWorker)
+  const initdocWorker = useWorkerManager((state) => state.initDocWorker)
 
   //生成式模型下载管理
   const setModelLoading = useGLModelLoading((state) => state.setLoadProgress)
@@ -58,9 +64,13 @@ export default function ChatCom() {
       if (sessionExists !== true) {
         return
       }
-      //初始化Worker
+      // 初始化Worker
       if (!modelWorker) {
         initmodelWorker()
+        return
+      }
+      if (!docWorker) {
+        initdocWorker()
         return
       }
       const loadModel = async () => {
@@ -73,7 +83,7 @@ export default function ChatCom() {
         position: 'bottom-right',
       })
     }
-  }, [modelWorker, sessionExists])
+  }, [modelWorker, docWorker, sessionExists])
 
   return (
     <>

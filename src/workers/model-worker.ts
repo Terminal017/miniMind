@@ -109,12 +109,11 @@ const api: ModelWorkerAPI = {
 
     await GLModel(prompt, {
       max_new_tokens: 512, // 控制最大生成长度
-      temperature: 0.7, // 控制回答的创造性
-      top_k: 50, // 限制采样候选数，减少噪音
+      temperature: 0.1, // 控制回答的创造性
       top_p: 0.9, // nucleus sampling，控制采样范围
       do_sample: true, // 启用采样
-      repetition_penalty: 1.2, // 防止模型复读
-      no_repeat_ngram_size: 3,
+      repetition_penalty: 1.1, //重复惩罚
+      no_repeat_ngram_size: 3, // 防止模型复读
       streamer: streamer, // 挂载流式处理器
     })
 

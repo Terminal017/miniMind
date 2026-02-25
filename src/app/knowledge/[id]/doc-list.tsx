@@ -70,6 +70,10 @@ export default function DocList() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   async function handleFileAppend(event: React.ChangeEvent<HTMLInputElement>) {
+    if (!docWorker) {
+      toast.info('worker初始化错误，请重试')
+      return
+    }
     const files = event.target.files
     if (!files || files.length === 0) return
 
