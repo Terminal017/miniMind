@@ -150,7 +150,7 @@ export function DataTable<TData, TValue>({
       <div className="flex justify-between">
         {/* 数据显示 */}
         <div className="flex flex-row items-center gap-2">
-          <p className="w-36 border px-4 py-1 rounded-md">
+          <p className="min-w-36 border px-4 py-1 rounded-md">
             已选择 {table.getFilteredSelectedRowModel().rows.length} /{' '}
             {table.getFilteredRowModel().rows.length} 项
           </p>

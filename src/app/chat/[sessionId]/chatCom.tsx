@@ -38,8 +38,10 @@ export default function ChatCom() {
     validateSession()
   }, [sessionId, router])
 
-  //初始化模型下载Worker
+  //初始化模型下载与向量化Worker
   const modelWorker = useWorkerManager((state) => state.modelWorker)
+  const docWorker = useWorkerManager((state) => state.docWorker)
+  const initdocWorker = useWorkerManager((state) => state.initDocWorker)
   const initmodelWorker = useWorkerManager((state) => state.initModelWorker)
 
   //生成式模型下载管理

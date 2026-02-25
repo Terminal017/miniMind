@@ -22,4 +22,10 @@ export interface DocWorkerAPI {
     onProgress: (data: { progress: number }) => void,
   ) => Promise<void>
   vectorizeChunks: (chunks: string[]) => Promise<number[][]>
+  searchSimilarChunks: (
+    question: string,
+    libraryId: number,
+    topK: number,
+    onProgress: (data: { progress: number }) => void,
+  ) => Promise<string[]>
 }

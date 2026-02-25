@@ -1,4 +1,5 @@
 import db from '@/lib/db'
+import { updateLibrary } from './libraryService'
 
 //添加chunks及其向量
 export async function addAllChunks(
@@ -15,6 +16,8 @@ export async function addAllChunks(
       embedding: vectors[index],
     }))
     await db.chunks.bulkAdd(chunkData)
+    //更新library的chunks统计
+    await updateLibrary(libraryId)
     return { success: true }
   } catch {
     return { success: false }

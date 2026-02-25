@@ -50,20 +50,18 @@ export async function deleteLibrary(libraryId: number) {
   }
 }
 
-//更新知识库信息
-export async function updateLibrary(
-  libraryId: number,
-  updates: {
-    files?: number
-    chunks?: number
-    status?: 'ready' | 'progressing' | 'error' | 'empty'
-  },
-) {
-  try {
-    db.libraries.update(libraryId, { ...updates, updatedAt: new Date() })
-    return { success: true }
-  } catch (error) {
-    console.error('更新知识库失败:', error)
-    return { success: false }
+//同步知识库信息
+export async function updateLibrary(libraryId: number | undefined) {
+  if (!libraryId) {
+    return
   }
+  const docs = await db.documents.where('libraryId').equals(libraryId).count()
+  const chunks = await db.chunks.where('libraryId').equals(libraryId).count()
+
+  await db.libraries.update(libraryId, {
+    files: docs,
+    chunks: chunks,
+    updatedAt: new Date(),
+    status: chunks > 0 ? 'ready' : 'empty',
+  })
 }

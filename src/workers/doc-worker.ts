@@ -14,6 +14,8 @@ import {
   FeatureExtractionPipeline,
 } from '@huggingface/transformers'
 import { addAllChunks, deleteDocChunks } from '@/services/chunkService'
+import db from '@/lib/db'
+import { cosineSimilarity } from '@/lib/calculate'
 
 // 设置 PDF.js 的 Worker 线程（它会新开一个Worker来处理PDF解析，这个库只能用它自己定义的Worker或当前线程）
 //调用pdfjs.getDocument会自动通过这个配置创建新worker
@@ -290,6 +292,48 @@ const api: DocWorkerAPI = {
       vectors.push(Array.from(output.data) as number[])
     }
     return vectors
+  },
+
+  //处理用户问题检索
+  async searchSimilarChunks(question, libraryId, topK, onProgress) {
+    //获取知识库所有切片
+    const allChunks = await db.chunks
+      .where('libraryId')
+      .equals(libraryId)
+      .toArray()
+    //知识库为空则跳过
+    if (allChunks.length === 0) {
+      return []
+    }
+
+    //加载模型
+    if (!embeddingModel) {
+      await this.loadEmbedModel(onProgress)
+    }
+
+    //获取问题的向量
+    const questionVecOutput = await this.vectorizeChunks([question])
+    const questionVec = questionVecOutput[0]
+
+    // 相似度排序查询
+    const scoredChunks = allChunks.map((chunk) => {
+      // 根据余弦相似度获取分数
+      const score = cosineSimilarity(questionVec, chunk.embedding)
+      return {
+        tex: chunk.content,
+        score: score,
+      }
+    })
+
+    //相似度排序
+    scoredChunks.sort((a, b) => b.score - a.score)
+
+    console.log('【A】相似度排序结果：', scoredChunks)
+    //返回相似度大于0.4的前3条结果
+    return scoredChunks
+      .filter((item) => item.score > 0.4)
+      .slice(0, topK)
+      .map((item) => item.tex)
   },
 }
 

@@ -118,6 +118,7 @@ export default function DocList() {
       })
       fileToastRef.current = undefined
       resetFileProcess() //重置文件处理进度状态
+      setIsProcessing(false) //重置处理状态
     }, 500)
   }
 

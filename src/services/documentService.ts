@@ -1,6 +1,7 @@
 // 文档CRUD
 
 import db from '@/lib/db'
+import { updateLibrary } from './libraryService'
 
 //读取所有文档
 export async function getAllDocuments(LibraryId: number) {
@@ -40,7 +41,9 @@ export async function deleteDocuments(idList: number[]) {
 export async function deleteDocumentInf(docId: number) {
   try {
     await db.chunks.where('docId').equals(docId).delete()
+    const libId = await db.documents.get(docId)
     await db.documents.delete(docId)
+    await updateLibrary(libId?.libraryId) //删除文档后更新知识库统计
     return { success: true }
   } catch (error) {
     return { success: false }
@@ -66,6 +69,8 @@ export async function addDocument(
       metadata: null, //预留属性
     }
     const newId = await db.documents.add(newDocument)
+    //增加library的文档数量统计
+    await updateLibrary(libraryId)
     return { success: true, id: newId }
   } catch (error) {
     console.error('添加文档失败:', error)
