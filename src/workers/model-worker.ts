@@ -49,7 +49,7 @@ const api: ModelWorkerAPI = {
           'text-generation',
           // 'onnx-community/Qwen2.5-0.5B-Instruct', //0.5B模型
           // 'onnx-community/LFM2-700M-ONNX', //更倾向于续写的模型，效果更好
-          'LFM2-700M-ONNX',
+          'Qwen2.5-0.5B-Instruct',
           {
             // 指定使用 WebGPU 加速。
             device: 'webgpu',
@@ -76,7 +76,7 @@ const api: ModelWorkerAPI = {
           'text-generation',
           // 'onnx-community/LFM2-700M-ONNX',
           // 'onnx-community/Qwen2.5-0.5B-Instruct',
-          'LFM2-700M-ONNX',
+          'Qwen2.5-0.5B-Instruct',
           {
             device: 'wasm',
             dtype: 'q4',

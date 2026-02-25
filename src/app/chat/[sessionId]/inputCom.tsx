@@ -68,21 +68,23 @@ export default function InputCom() {
     const prompt =
       chunks.length > 0
         ? `<|im_start|>system
-    你是一个严谨的百科助手。请仅根据提供的【参考资料】简洁回答问题。如果资料中没提到，请说资料中未提及。<|im_end|>
-    <|im_start|>user
-    【参考资料】
-    1. ${chunks[0]}
-    2. ${chunks[1]}
-    3. ${chunks[2]}
-    
-    【用户提问】
-    ${question_msg}
-    
-    请结合上述资料给出简洁的回答：<|im_end|>
-    <|im_start|>assistant
-    `
+          你是一个基于文档回答问题的助手。
+          规则：
+          1. 仅根据提供的【参考资料】回答。
+          2. 如果资料内容不足以回答，请直接说“资料中未提及”。
+          3. 保持回答简洁、严谨。<|im_end|>
+          <|im_start|>user
+          【参考资料】：
+          1. ${chunks[0]}
+          2. ${chunks[1]}
+          3. ${chunks[2]}
+
+          【我的问题】：
+          ${question_msg}<|im_end|>
+          <|im_start|>assistant
+          `
         : `<|im_start|>system
-        你是一个友好、诚实且博学的 AI 助手。请直接回答用户的问题，字数限制为100。<|im_end|>
+        你是一个有用、诚实且严谨的 AI 助手。请直接回答用户的问题。<|im_end|>
         <|im_start|>user
         ${question_msg}<|im_end|>
         <|im_start|>assistant
