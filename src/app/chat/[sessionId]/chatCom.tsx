@@ -20,7 +20,6 @@ const InputCom = dynamic(() => import('./inputCom'), {
 
 export default function ChatCom() {
   const { sessionId } = useParams()
-  console.log('当前会话ID:', Number(sessionId))
 
   const [sessionExists, setSessionExists] = useState<boolean | null>(null)
   const router = useRouter()

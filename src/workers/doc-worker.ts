@@ -71,7 +71,6 @@ env.backends.onnx.wasm!.wasmPaths = '/wasm/'
 let embeddingModel: FeatureExtractionPipeline | null = null
 //Promise锁，避免模型下载过程中触发新的下载，并且允许等待完成后进行后续请求
 let embeddingModelLock: Promise<void> | null = null
-console.log('Worker Ready')
 
 const api: DocWorkerAPI = {
   //处理文件：解析、切片、向量化
@@ -83,14 +82,8 @@ const api: DocWorkerAPI = {
   ) {
     //加载向量模型
     if (!embeddingModel) {
-      console.log('开始下载向量化模型（worker）')
       await this.loadEmbedModel(onProgress)
-      console.log('向量化模型下载成功（worker）')
-    } else {
-      console.log('向量化模型命中缓存')
     }
-
-    console.log('Worker开始处理文件:', file.name)
 
     let docId: number | null = null
     try {
@@ -165,7 +158,6 @@ const api: DocWorkerAPI = {
       const content = await page.getTextContent()
       text += content.items.map((item: any) => item.str).join('') + '\n'
     }
-    console.log('PDF解析结果：', text)
     return text
   },
 
@@ -203,7 +195,6 @@ const api: DocWorkerAPI = {
       /__CODE_BLOCK(\d+)__/g,
       (_, i) => codeBlocks[Number(i)] ?? '',
     )
-    console.log('Markdown解析结果：', result)
     return result
   },
 
@@ -226,7 +217,6 @@ const api: DocWorkerAPI = {
     }
     const docs = await splitter.createDocuments([text])
     const chunks = docs.map((doc) => doc.pageContent)
-    console.log('文本切片结果：', chunks)
     return chunks
   },
 
@@ -239,15 +229,12 @@ const api: DocWorkerAPI = {
     }
 
     if (embeddingModel) {
-      console.log('模型已存在', embeddingModel)
       return
     }
 
     //创建锁（没有awiat，这里是Promise本身）
     embeddingModelLock = (async () => {
       try {
-        console.log('开始加载向量模型 (尝试使用 WebGPU)...')
-
         // 初始化 pipeline
         // 参数: 任务类型 (feature-extraction 是专门用来做向量化的)
         // 模型名称 (bge-small-zh-v1.5 是中文向量化的轻量模型，约100MB，后续可考虑base和large)
@@ -268,8 +255,6 @@ const api: DocWorkerAPI = {
             },
           },
         )) as FeatureExtractionPipeline
-
-        console.log('WebGPU 向量模型加载完毕')
       } catch (error) {
         console.warn('WebGPU 初始化失败，正在降级到 WASM (CPU) 模式...', error)
 
@@ -286,7 +271,6 @@ const api: DocWorkerAPI = {
             },
           },
         )
-        console.log('WASM (CPU) 向量模型加载成功！')
       } finally {
         embeddingModelLock = null
       }
@@ -332,12 +316,10 @@ const api: DocWorkerAPI = {
 
     //加载模型
     if (!embeddingModel) {
-      console.log('doc-worker: 向量模型未加载，开始加载...')
       await this.loadEmbedModel(onProgress)
     }
 
     if (!embeddingModel) {
-      console.log('doc-worker: 向量模型加载失败')
       throw new Error('向量化模型加载失败')
     }
 
@@ -358,7 +340,6 @@ const api: DocWorkerAPI = {
     //相似度排序
     scoredChunks.sort((a, b) => b.score - a.score)
 
-    console.log('【A】相似度排序结果：', scoredChunks)
     //返回相似度大于0.4的前3条结果
     return scoredChunks
       .filter((item) => item.score > 0.4)

@@ -86,18 +86,14 @@ const useWorkerManager = create<WorkerManagerState>((set, get) => ({
 
   //初始化Worker
   initModelWorker: () => {
-    console.log('初始化 Model Worker...')
     if (get().modelWorker) return
-    console.log('Model Worker初始化成功（Zustand）')
     const worker = new Worker('/model-worker-bundle.js', { type: 'module' })
     const api = wrap<ModelWorkerAPI>(worker)
     set({ modelWorker: { worker, api } })
   },
 
   initDocWorker: () => {
-    console.log('初始化 Doc Worker...')
     if (get().docWorker) return
-    console.log('DOC Worker初始化成功（Zustand）')
     const worker = new Worker('/doc-worker-bundle.js', { type: 'module' })
     const api = wrap<DocWorkerAPI>(worker)
     set({ docWorker: { worker, api } })
@@ -113,7 +109,6 @@ const useWorkerManager = create<WorkerManagerState>((set, get) => ({
     //终止Worker实例
     modelWorker.worker.terminate()
     set({ modelWorker: null })
-    console.log('Model Worker已终止')
   },
 
   terminateDocWorker: () => {
@@ -123,7 +118,6 @@ const useWorkerManager = create<WorkerManagerState>((set, get) => ({
     docWorker.api[releaseProxy]()
     docWorker.worker.terminate()
     set({ docWorker: null })
-    console.log('Doc Worker已终止')
   },
 
   // 全局清理

@@ -19,9 +19,7 @@ env.remoteHost = 'https://model.startrails.site/' //从R2中下载模型
 env.remotePathTemplate = '{model}/'
 
 //让浏览器从本地下载依赖文件而非从CDN
-console.log('设置ONNX WASM路径为 /wasm/', env.backends.onnx)
 const newpath = new URL('/wasm/', self.location.origin).toString()
-console.log('新ONNX WASM路径:', newpath)
 env.backends.onnx.wasm!.wasmPaths = newpath
 
 //定义生成式语言模型
@@ -37,13 +35,10 @@ const api: ModelWorkerAPI = {
       return
     }
     if (GLModel) {
-      console.log('模型已存在', GLModel)
       return
     }
     GLModelLock = (async () => {
       try {
-        console.log('开始加载向量模型 (尝试使用 WebGPU)...')
-
         //@ts-ignore
         GLModel = await pipeline(
           'text-generation',
@@ -66,8 +61,6 @@ const api: ModelWorkerAPI = {
             },
           },
         )
-
-        console.log('WebGPU 模型加载完毕')
       } catch (error) {
         console.warn('WebGPU 初始化失败，正在降级到 WASM (CPU) 模式...', error)
 

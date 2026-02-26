@@ -89,7 +89,6 @@ export default function InputCom() {
         <|im_start|>assistant
         `
 
-    console.log('提示词', prompt)
     //闭包传递sessionId
     initStreaming(Number(sessionId))
     await modelWorker.api.generateStreaming(

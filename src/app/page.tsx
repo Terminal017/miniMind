@@ -1,9 +1,6 @@
-import { cn } from '@/lib/utils'
+import { redirect } from 'next/navigation'
 
 export default function Home() {
-  return (
-    <div className="min-h-screen bg-background text-foreground antialiased">
-      Main Page
-    </div>
-  )
+  // 直接重定向到 /chat
+  redirect('/chat')
 }
