@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+### 项目概述
 
-## Getting Started
+基于 Next.js + TypeScript + shadcn/ui + transform.js 实现的浏览器内嵌模型项目
 
-First, run the development server:
+### 运行说明
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+1. 运行环境
+
+- Node.js >= 18.18.0
+- npm >= 9
+- pnpm >= 8
+
+2. 设备要求
+
+- 浏览器需要支持 Web GPU，内存推荐 16GB 及以上
+- 推荐使用 Chrome 浏览器进行测试
+
+3. 安装依赖
+
+```
+npm install
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. 运行测试
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+npm run dev
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+5. 构建项目
 
-## Learn More
+```
+npm run build
+npm run start
+#或
+pnpm build
+pnpm start
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 其他相关说明
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. 为考虑中国大陆的下载，模型现在托管在 Cloudflare R2 上，部署域名与本地测试(`http://localhost:3000`)能够正常下载。
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+2. 模型下载存储在 Cache Storage 中，文档存储在 Indexed DB 中，如不再访问项目网站，推荐先去设置中清理相关数据或手动清理。
